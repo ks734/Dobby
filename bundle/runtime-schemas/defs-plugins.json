@@ -359,6 +359,54 @@
                                     }
                                 }
                             }
+                        },
+                        "dynamic": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "destination",
+                                    "flags",
+                                    "source"
+                                ],
+                                "properties": {
+                                    "destination": {
+                                        "type": "string"
+                                    },
+                                    "flags": {
+                                        "$ref": "defs.json#/definitions/int32"
+                                    },
+                                    "options": {
+                                        "$ref": "defs.json#/definitions/ArrayOfStrings"
+                                    },
+                                    "source": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "mountOwner": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "source"
+                                ],
+                                "properties": {
+                                    "source": {
+                                        "type": "string"
+                                    },
+                                    "user": {
+                                        "type": "string"
+                                    },
+                                    "group": {
+                                        "type": "string"
+                                    },
+                                    "recursive": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -556,6 +604,32 @@
                 }
             }
         },
+        "OOMCrash": {
+            "type": "object",
+            "required": [
+                "required",
+                "data"
+            ],
+            "properties": {
+                "required": {
+                    "type": "boolean"
+                },
+                "dependsOn": {
+                    "$ref": "defs.json#/definitions/ArrayOfStrings"
+                },
+                "data": {
+                    "type": "object",
+                    "required": [
+                        "path"
+                    ],
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "LegacyPlugins": {
             "type": "object",
             "properties": {
@@ -608,6 +682,9 @@
                 },
                 "testrdkplugin": {
                     "$ref": "#/definitions/TestRdkPlugin"
+                },
+                "oomcrash": {
+                    "$ref": "#/definitions/OOMCrash"
                 },
                 "devicemapper": {
                     "$ref": "#/definitions/DeviceMapper"
