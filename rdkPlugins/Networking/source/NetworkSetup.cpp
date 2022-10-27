@@ -850,7 +850,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         Netfilter::RuleSet ipv6RuleSet;
         if (networkType == NetworkType::Nat)
         {
-            ipv6RuleSet = createAntiSpoofRule(vethName, helper->ipv6AddrStr(), AF_INET6);
+            //ipv6RuleSet = createAntiSpoofRule(vethName, helper->ipv6AddrStr(), AF_INET6);
         }
         else if (networkType == NetworkType::None)
         {
@@ -928,7 +928,7 @@ bool NetworkSetup::removeVethPair(const std::shared_ptr<Netfilter> &netfilter,
         Netfilter::RuleSet ipv6RuleSet;
         if (networkType == NetworkType::Nat)
         {
-            ipv6RuleSet = createAntiSpoofRule(vethName, helper->ipv6AddrStr(), AF_INET6);
+            //ipv6RuleSet = createAntiSpoofRule(vethName, helper->ipv6AddrStr(), AF_INET6);
         }
         else if (networkType == NetworkType::None)
         {
