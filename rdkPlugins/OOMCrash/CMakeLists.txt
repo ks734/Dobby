@@ -15,21 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Reference CMake file for the simplest Dobby RDK Plugin
-
-# Project name should match the name of the plugin
-# CMake will prefix this with "lib"
-project(StoragePlugin)
+project(OOMCrashPlugin)
 
 add_library( ${PROJECT_NAME}
         SHARED
-        source/Storage.cpp
-        source/RefCountFile.cpp
-        source/ImageManager.cpp
-        source/StorageHelper.cpp
-        source/LoopMountDetails.cpp
-        source/DynamicMountDetails.cpp
-        source/MountOwnerDetails.cpp
+	source/OOMCrashPlugin.cpp
         )
 
 target_include_directories(${PROJECT_NAME}
