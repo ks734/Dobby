@@ -348,13 +348,17 @@ bool ImageManager::createFSImageAt(int dirFd,
         return false;
     }
 
+    int status;
+    pid_t exitedPid;
+    pid_t timeoutPid;
     // fork so we can launch the mkfs.ext[2,3,4] utility to format the data
-    pid_t pid = vfork();
-    if (pid < 0)
+    pid_t workerPid;
+    workerPid = vfork();
+    if (workerPid < 0)
     {
         AI_LOG_SYS_ERROR_EXIT(errno, "failed to fork and launch image formatter");
     }
-    else if (pid == 0)
+    else if (workerPid == 0)
     {
         // within forked client so exec the mkfs.ext utilities
 
@@ -428,13 +432,77 @@ bool ImageManager::createFSImageAt(int dirFd,
     }
 
     // check if failed to fork
-    if (pid < 0)
+    if (workerPid < 0)
     {
         return false;
     }
 
+    timeoutPid = fork();
+    if (timeoutPid == 0) {
+        // Wait 5.5 second
+        struct timespec timeout_val, remaining;
+        timeout_val.tv_nsec = 500000000L;
+        timeout_val.tv_sec = 5;
+
+        // In case signal comes during wait
+        while(nanosleep(&timeout_val, &remaining) && errno==EINTR){
+            timeout_val=remaining;
+        }
+
+        _exit(0);
+    }
+
+    // Wait for either worker or timeout to finish
+    do
+    {
+        exitedPid = TEMP_FAILURE_RETRY(wait(&status));
+        if (exitedPid >= 0 &&
+            exitedPid != timeoutPid &&
+            exitedPid != workerPid)
+        {
+            AI_LOG_DEBUG("Found non-waited process with pid %d", exitedPid);
+        }
+    } while (exitedPid >= 0 &&
+            exitedPid != timeoutPid &&
+            exitedPid != workerPid);
+
+    if (exitedPid == timeoutPid)
+    {
+        // Timeout occurred
+        AI_LOG_ERROR("Timeout executing plugin %s hookpoint %s",
+                    pluginName.c_str(), HookPointToString(hook).c_str());
+
+        // Check if we can kill workerPid (if it ended already
+        // then we will be unable to kill)
+        if (kill(workerPid, 0) == -1)
+        {
+			// Cannot kill process, probably already dead
+            // treat it as if it would return proper waitpid
+            AI_LOG_DEBUG("Cannot kill after timeout");
+            exitedPid = waitpid(workerPid, &status, WNOHANG);
+        }
+        else
+        {
+            // Worker is stuck, we need to kill whole group
+            // in case any child process was stuck too
+            AI_LOG_DEBUG("Can kill after timeout");
+            killpg(workerPid, SIGKILL);
+            // Collect the worker process
+            waitpid(workerPid, &status, 0);
+            // Collect child of worker if any
+            wait(nullptr);
+        }
+
+    }
+    else if (exitedPid == workerPid)
+    {
+        // Worker finished
+        kill(timeoutPid, SIGKILL);
+        // Collect the timeout process
+        wait(nullptr);
+    }
+
     // in APP_Process so wait for the forked child to finish
-    int status;
     if ((waitpid(pid, &status, 0) == -1) ||
         !WIFEXITED(status) || (WEXITSTATUS(status) != EXIT_SUCCESS))
     {
