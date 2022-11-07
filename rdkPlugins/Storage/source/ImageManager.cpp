@@ -312,7 +312,7 @@ bool ImageManager::createFSImageAt(int dirFd,
     // close.  This would mean we wouldn't leak tmp files if the process
     // was aborted half way through
 
-    AI_LOG_WARN("DBG : filePath = %s", filepath.c_str());
+    AI_LOG_INFO("DBG : filePath = %s fileType = %s", filepath.c_str(), fs.c_str());
     int len;
     char tempFilename[PATH_MAX];
     if (dirFd == AT_FDCWD)
@@ -387,7 +387,7 @@ bool ImageManager::createFSImageAt(int dirFd,
         char filePathBuf[64];
         sprintf(filePathBuf, "/proc/self/fd/%d", duppedImageFd);
 
-        AI_LOG_WARN("DBG : filePathBuf = %s", filePathBuf);
+        AI_LOG_INFO("DBG : filePathBuf = %s", filePathBuf);
         // the format type
         std::string type;
         if (0 == strcasecmp(fs.c_str(), "ext2"))
