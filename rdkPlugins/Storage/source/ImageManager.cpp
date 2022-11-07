@@ -312,6 +312,7 @@ bool ImageManager::createFSImageAt(int dirFd,
     // close.  This would mean we wouldn't leak tmp files if the process
     // was aborted half way through
 
+    AI_LOG_WARN("DBG : filePath = %s", filepath.c_str());
     int len;
     char tempFilename[PATH_MAX];
     if (dirFd == AT_FDCWD)
@@ -386,6 +387,7 @@ bool ImageManager::createFSImageAt(int dirFd,
         char filePathBuf[64];
         sprintf(filePathBuf, "/proc/self/fd/%d", duppedImageFd);
 
+        AI_LOG_WARN("DBG : filePathBuf = %s", filePathBuf);
         // the format type
         std::string type;
         if (0 == strcasecmp(fs.c_str(), "ext2"))
@@ -469,9 +471,6 @@ bool ImageManager::createFSImageAt(int dirFd,
     if (exitedPid == timeoutPid)
     {
         // Timeout occurred
-        AI_LOG_ERROR("Timeout executing plugin %s hookpoint %s",
-                    pluginName.c_str(), HookPointToString(hook).c_str());
-
         // Check if we can kill workerPid (if it ended already
         // then we will be unable to kill)
         if (kill(workerPid, 0) == -1)
