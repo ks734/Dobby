@@ -503,7 +503,7 @@ bool ImageManager::createFSImageAt(int dirFd,
     }
 
     // in APP_Process so wait for the forked child to finish
-    if ((waitpid(pid, &status, 0) == -1) ||
+    if ((waitpid(workerPid, &status, 0) == -1) ||
         !WIFEXITED(status) || (WEXITSTATUS(status) != EXIT_SUCCESS))
     {
         unlink(tempFilename);
