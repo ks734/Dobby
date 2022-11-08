@@ -311,6 +311,7 @@ bool ImageManager::createFSImageAt(int dirFd,
     // O_TMPFILE to create a file with no name that is freed on the last
     // close.  This would mean we wouldn't leak tmp files if the process
     // was aborted half way through
+    AI_LOG_INFO("DBG : filePath = %s fileType = %s", filepath.c_str(), fs.c_str());
 
     int len;
     char tempFilename[PATH_MAX];
@@ -381,6 +382,7 @@ bool ImageManager::createFSImageAt(int dirFd,
 
         char filePathBuf[64];
         sprintf(filePathBuf, "/proc/self/fd/%d", duppedImageFd);
+        AI_LOG_INFO("DBG : filePathBuf = %s", filePathBuf);
 
         // the format type
         std::string type;
@@ -413,7 +415,7 @@ bool ImageManager::createFSImageAt(int dirFd,
         }
         else
         {
-            execlp("/sbin/mke2fs", "mke2fs", "-t", type.c_str(), "-F", filePathBuf, nullptr);
+            execlp("/sbin/mke2fs", "mke2fs", "-t", type.c_str(), "-F", "-F", filePathBuf, nullptr);
         }
 
         // execlp failed, but don't bother trying to print an error as we've
