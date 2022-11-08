@@ -415,7 +415,7 @@ bool ImageManager::createFSImageAt(int dirFd,
         }
         else
         {
-            execlp("/sbin/mke2fs", "mke2fs", "-t", type.c_str(), "-F", "-F", filePathBuf, nullptr);
+            execlp("/sbin/mke2fs", "mke2fs", "-t", type.c_str(), "-FF", filePathBuf, nullptr);
         }
 
         // execlp failed, but don't bother trying to print an error as we've
