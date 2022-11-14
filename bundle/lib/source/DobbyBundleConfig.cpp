@@ -140,6 +140,9 @@ bool DobbyBundleConfig::constructConfig(const ContainerId& id, const std::string
     }
     catch (const Json::Exception& e)
     {
+        std::ifstream srcCfg(bundlePath + "/config.json", std::ios::binary);
+        std::ofstream dstCfg(bundlePath + "/config-temp.json", std::ios::binary);
+        dstCfg << srcCfg.rdbuf();
         AI_LOG_ERROR("exception thrown during config parsing - %s", e.what());
         mValid = false;
     }
