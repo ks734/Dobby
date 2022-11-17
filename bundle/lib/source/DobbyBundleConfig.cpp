@@ -123,6 +123,9 @@ bool DobbyBundleConfig::constructConfig(const ContainerId& id, const std::string
         parser_error err;
         std::string configPath = bundlePath + "/config.json";
         AI_LOG_WARN("DBG : Before rt_dobby_schema_parse_file");
+        std::ifstream srcCfg(bundlePath + "/config.json", std::ios::binary);
+        std::ofstream dstCfg(bundlePath + "/config-bfore.json", std::ios::binary);
+        dstCfg << srcCfg.rdbuf();
         mConf = std::shared_ptr<rt_dobby_schema>(
                     rt_dobby_schema_parse_file(configPath.c_str(), nullptr, &err),
                     free_rt_dobby_schema);
