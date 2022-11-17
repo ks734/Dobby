@@ -114,17 +114,19 @@ bool DobbyBundleConfig::constructConfig(const ContainerId& id, const std::string
     // try / catch
     try
     {
-        AI_LOG_INFO("DBG : Before parseOCIConfig");
+        AI_LOG_WARN("DBG : Before parseOCIConfig");
         // go and parse the OCI config file for plugins to use
         mValid = parseOCIConfig(bundlePath);
+        AI_LOG_WARN("DBG : After parseOCIConfig");
 
         // de-serialise config.json
         parser_error err;
         std::string configPath = bundlePath + "/config.json";
+        AI_LOG_WARN("DBG : Before rt_dobby_schema_parse_file");
         mConf = std::shared_ptr<rt_dobby_schema>(
                     rt_dobby_schema_parse_file(configPath.c_str(), nullptr, &err),
                     free_rt_dobby_schema);
-        AI_LOG_INFO("DBG : After parseOCIConfig");
+      AI_LOG_WARN("DBG : After rt_dobby_schema_parse_file");
         if (mConf.get() == nullptr || err)
         {
             AI_LOG_ERROR_EXIT("Failed to parse bundle config, err '%s'", err);
