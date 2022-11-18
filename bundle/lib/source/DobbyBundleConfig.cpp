@@ -243,7 +243,7 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
     AI_LOG_FN_ENTRY();
 
     std::lock_guard<std::mutex> locker(mLock);
-
+    AI_LOG_WARN("DBG : Before bundleConfigFs");
     // Parse config.json to a Json::Value type
     std::ifstream bundleConfigFs(bundlePath + "/config.json", std::ifstream::binary);
     if (!bundleConfigFs)
@@ -251,16 +251,22 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
         AI_LOG_ERROR_EXIT("failed to open bundle config file at '%s'", bundlePath.c_str());
         return false;
     }
+    AI_LOG_WARN("DBG : After bundleConfigFs");
     bundleConfigFs.seekg(0, std::ifstream::end);
     ssize_t length = bundleConfigFs.tellg();
     bundleConfigFs.seekg(0, std::ifstream::beg);
+    AI_LOG_WARN("DBG : After seekg");
     char* buffer = new char[length];
+    AI_LOG_WARN("DBG : Before read");
     bundleConfigFs.read(buffer, length);
+    AI_LOG_WARN("DBG : After read");
     std::string jsonConfigString(buffer, length);
+    AI_LOG_WARN("DBG : After jsonConfigString");
     delete [] buffer;
     std::istringstream sin(jsonConfigString);
+    AI_LOG_WARN("DBG : Before sin");
     sin >> mConfig;
-
+    AI_LOG_WARN("DBG : After sin");
     // Populate the object with any needed values
     mUserId = mConfig["process"]["user"]["uid"].asInt();
     mGroupId = mConfig["process"]["user"]["gid"].asInt();
@@ -280,7 +286,7 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
         return false;
 #endif //defined(LEGACY_COMPONENTS)
     }
-
+    AI_LOG_WARN("DBG : Before parse rdkplugins");
     // Parse rdk plugins if present & not null
     if (mConfig.isMember("rdkPlugins") && mConfig["rdkPlugins"].isObject())
     {
@@ -296,7 +302,7 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
             mRdkPlugins.emplace(rdkPluginName, rdkPlugins[rdkPluginName]);
         }
     }
-
+    AI_LOG_WARN("DBG : After parse rdkplugins");
     AI_LOG_FN_EXIT();
     return true;
 }
