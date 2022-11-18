@@ -253,14 +253,14 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
     }
     AI_LOG_WARN("DBG : After bundleConfigFs");
     bundleConfigFs.seekg(0, std::ifstream::end);
-    ssize_t length = bundleConfigFs.tellg();
+    size_t length = bundleConfigFs.tellg();
     bundleConfigFs.seekg(0, std::ifstream::beg);
-    AI_LOG_WARN("DBG : Length : %zu, length");
+    AI_LOG_WARN("DBG : Length : %zu SIZEMAX : %zu, length, SIZE_MAX");
     char* buffer = new char[length];
     AI_LOG_WARN("DBG : Before read");
     bundleConfigFs.read(buffer, length);
     AI_LOG_WARN("DBG : After read");
-    std::string jsonConfigString(buffer);
+    std::string jsonConfigString(buffer, length);
     AI_LOG_WARN("DBG : After jsonConfigString");
     delete [] buffer;
     std::istringstream sin(jsonConfigString);
