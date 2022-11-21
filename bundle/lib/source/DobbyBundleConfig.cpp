@@ -253,9 +253,9 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
     }
     AI_LOG_WARN("DBG : After bundleConfigFs");
     bundleConfigFs.seekg(0, std::ifstream::end);
-    size_t length = bundleConfigFs.tellg();
+    uint16_t length = bundleConfigFs.tellg();
     bundleConfigFs.seekg(0, std::ifstream::beg);
-    AI_LOG_WARN("DBG : Length : %zu SIZEMAX : %zu, length, SIZE_MAX");
+    AI_LOG_WARN("DBG : Length : %zu", length);
     char* buffer = new char[length];
     AI_LOG_WARN("DBG : Before read");
     bundleConfigFs.read(buffer, length);
@@ -266,7 +266,7 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
     std::istringstream sin(jsonConfigString);
     AI_LOG_WARN("DBG : Before sin");
     sin >> mConfig;
-    AI_LOG_WARN("DBG : After sin length : %zu,sin.str().length()");
+    AI_LOG_WARN("DBG : After sin length : %zu",sin.str().length());
     // Populate the object with any needed values
     mUserId = mConfig["process"]["user"]["uid"].asInt();
     mGroupId = mConfig["process"]["user"]["gid"].asInt();
