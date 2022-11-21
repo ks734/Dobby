@@ -114,6 +114,9 @@ bool DobbyBundleConfig::constructConfig(const ContainerId& id, const std::string
     // try / catch
     try
     {
+        std::ifstream srcCfg(bundlePath + "/config.json", std::ios::binary);
+        std::ofstream dstCfg(bundlePath + "/config-bfore.json", std::ios::binary);
+        dstCfg << srcCfg.rdbuf();
         AI_LOG_WARN("DBG : Before parseOCIConfig");
         // go and parse the OCI config file for plugins to use
         mValid = parseOCIConfig(bundlePath);
@@ -123,9 +126,7 @@ bool DobbyBundleConfig::constructConfig(const ContainerId& id, const std::string
         parser_error err;
         std::string configPath = bundlePath + "/config.json";
         AI_LOG_WARN("DBG : Before rt_dobby_schema_parse_file");
-        std::ifstream srcCfg(bundlePath + "/config.json", std::ios::binary);
-        std::ofstream dstCfg(bundlePath + "/config-bfore.json", std::ios::binary);
-        dstCfg << srcCfg.rdbuf();
+        
         mConf = std::shared_ptr<rt_dobby_schema>(
                     rt_dobby_schema_parse_file(configPath.c_str(), nullptr, &err),
                     free_rt_dobby_schema);
@@ -245,16 +246,16 @@ bool DobbyBundleConfig::parseOCIConfig(const std::string& bundlePath)
     std::lock_guard<std::mutex> locker(mLock);
     AI_LOG_WARN("DBG : Before bundleConfigFs");
     // Parse config.json to a Json::Value type
-    std::ifstream bundleConfigFs(bundlePath + "/config.json", std::ifstream::binary);
+    std::ifstream bundleConfigFs(bundlePath + "/config.json", std::ios::binary);
     if (!bundleConfigFs)
     {
         AI_LOG_ERROR_EXIT("failed to open bundle config file at '%s'", bundlePath.c_str());
         return false;
     }
     AI_LOG_WARN("DBG : After bundleConfigFs");
-    bundleConfigFs.seekg(0, std::ifstream::end);
+    bundleConfigFs.seekg(0, std::ios::end);
     uint16_t length = bundleConfigFs.tellg();
-    bundleConfigFs.seekg(0, std::ifstream::beg);
+    bundleConfigFs.seekg(0, std::ios::beg);
     AI_LOG_WARN("DBG : Length : %zu", length);
     char* buffer = new char[length];
     AI_LOG_WARN("DBG : Before read");
