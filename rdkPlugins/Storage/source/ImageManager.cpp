@@ -439,10 +439,10 @@ bool ImageManager::createFSImageAt(int dirFd,
 
     timeoutPid = fork();
     if (timeoutPid == 0) {
-        // Wait 5.5 second
+        // Wait 2.5 second
         struct timespec timeout_val, remaining;
         timeout_val.tv_nsec = 500000000L;
-        timeout_val.tv_sec = 5;
+        timeout_val.tv_sec = 2;
 
         // In case signal comes during wait
         while(nanosleep(&timeout_val, &remaining) && errno==EINTR){
@@ -476,16 +476,16 @@ bool ImageManager::createFSImageAt(int dirFd,
         // then we will be unable to kill)
         if (kill(workerPid, 0) == -1)
         {
-	          // Cannot kill process, probably already dead
+            // Cannot kill process, probably already dead
             // treat it as if it would return proper waitpid
-            AI_LOG_DEBUG("Cannot kill after timeout");
+            AI_LOG_WARN("Cannot kill after timeout");
             exitedPid = waitpid(workerPid, &status, WNOHANG);
         }
         else
         {
             // Worker is stuck, we need to kill whole group
             // in case any child process was stuck too
-            AI_LOG_DEBUG("Can kill after timeout");
+            AI_LOG_WARN("Can kill after timeout");
             killpg(workerPid, SIGKILL);
             // Collect the worker process
             if ((waitpid(workerPid, &status, 0) == -1) ||
