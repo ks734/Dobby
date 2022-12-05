@@ -348,6 +348,7 @@ bool ImageManager::createFSImageAt(int dirFd,
         return false;
     }
 
+    AI_LOG_WARN("DBG : filePath = %s fileSize = %zu imageFd = %d", filepath.c_str(), size, imageFd);
     // fork so we can launch the mkfs.ext[2,3,4] utility to format the data
     pid_t pid = vfork();
     if (pid < 0)
@@ -358,8 +359,16 @@ bool ImageManager::createFSImageAt(int dirFd,
     {
         // within forked client so exec the mkfs.ext utilities
 
+        int ret = 0;
+        int devnull = open("/tmp/mkfs_logfile",O_RDWR | O_CREAT, 0);
+
+        ret = system("chmod 666 /tmp/mkfs_logfile");
+        if (ret == 0)
+            AI_LOG_WARN("DBG : Permissions of file changed successfully");
+        else
+            AI_LOG_WARN("DBG : Unable to change the permissions of file");
         // redirect stdin, stdout and stderr file descriptors to /dev/null
-        int devnull = open("/dev/null", O_RDWR, 0);
+        // int devnull = open("/dev/null", O_RDWR, 0);
         if (devnull < 0)
         {
             fprintf(stderr, "failed to redirect stdin, stdout and stderr to "
@@ -413,7 +422,7 @@ bool ImageManager::createFSImageAt(int dirFd,
         }
         else
         {
-            execlp("/sbin/mke2fs", "mke2fs", "-t", type.c_str(), "-F", filePathBuf, nullptr);
+            execlp("/sbin/mke2fs", "mke2fs", "-v", "-t", type.c_str(), "-F", filePathBuf, nullptr);
         }
 
         // execlp failed, but don't bother trying to print an error as we've
