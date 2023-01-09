@@ -22,13 +22,13 @@ cmake_minimum_required( VERSION 3.7.0 )
 include(GNUInstallDirs)
 
 # Project setup
-project( Dobby VERSION "3.5.1" )
+project( Dobby VERSION "3.6.0" )
 
 
 # Set the major and minor version numbers of dobby (also used by plugins)
 set( DOBBY_MAJOR_VERSION 3 )
-set( DOBBY_MINOR_VERSION 5 )
-set( DOBBY_MICRO_VERSION 1 )
+set( DOBBY_MINOR_VERSION 6 )
+set( DOBBY_MICRO_VERSION 0 )
 
 set(INSTALL_CMAKE_DIR lib/cmake/Dobby)
 
@@ -297,6 +297,7 @@ option(PLUGIN_HTTPPROXY "Include HttpProxy plugin" OFF)
 option(PLUGIN_APPSERVICES "Include AppServices plugin" OFF)
 option(PLUGIN_IONMEMORY "Include ION Memory plugin" OFF)
 option(PLUGIN_DEVICEMAPPER "Include DeviceMapper plugin" OFF)
+option(PLUGIN_GAMEPAD "Include GamepadPlugin plugin" OFF)
 
 
 if(PLUGIN_TESTPLUGIN)
@@ -357,6 +358,10 @@ endif()
 
 if(PLUGIN_OOMCRASH)
 	add_subdirectory(rdkPlugins/OOMCrash)
+endif()
+
+if(PLUGIN_GAMEPAD)
+	add_subdirectory(rdkPlugins/Gamepad)
 endif()
 
 # Export targets in Dobby package
