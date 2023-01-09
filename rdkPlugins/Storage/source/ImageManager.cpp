@@ -360,9 +360,9 @@ bool ImageManager::createFSImageAt(int dirFd,
         // within forked client so exec the mkfs.ext utilities
 
         int ret = 0;
-        int devnull = open("/tmp/mkfs_logfile",O_RDWR | O_CREAT, 0);
+        int devnull = open("/opt/logs/mkfs_logfile",O_RDWR | O_CREAT, 0);
 
-        ret = system("chmod 666 /tmp/mkfs_logfile");
+        ret = system("chmod 666 /opt/logs/mkfs_logfile");
         if (ret == 0)
             AI_LOG_WARN("DBG : Permissions of file changed successfully");
         else
