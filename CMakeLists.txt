@@ -22,12 +22,12 @@ cmake_minimum_required( VERSION 3.7.0 )
 include(GNUInstallDirs)
 
 # Project setup
-project( Dobby VERSION "3.3.0" )
+project( Dobby VERSION "3.6.0" )
 
 
 # Set the major and minor version numbers of dobby (also used by plugins)
 set( DOBBY_MAJOR_VERSION 3 )
-set( DOBBY_MINOR_VERSION 3 )
+set( DOBBY_MINOR_VERSION 6 )
 set( DOBBY_MICRO_VERSION 0 )
 
 set(INSTALL_CMAKE_DIR lib/cmake/Dobby)
@@ -290,6 +290,7 @@ option(PLUGIN_IPC "Include IPC plugin" ON)
 option(PLUGIN_STORAGE "Include Storage plugin" ON)
 option(PLUGIN_MINIDUMP "Include Minidump plugin" ON)
 option(PLUGIN_THUNDER "Include Thunder plugin" ON)
+option(PLUGIN_OOMCRASH "Include OOMCrash plugin" ON)
 
 # Optional RDK plugins
 option(PLUGIN_TESTPLUGIN "Include TestPlugin plugin" OFF)
@@ -300,6 +301,7 @@ option(PLUGIN_HTTPPROXY "Include HttpProxy plugin" OFF)
 option(PLUGIN_APPSERVICES "Include AppServices plugin" OFF)
 option(PLUGIN_IONMEMORY "Include ION Memory plugin" OFF)
 option(PLUGIN_DEVICEMAPPER "Include DeviceMapper plugin" OFF)
+option(PLUGIN_GAMEPAD "Include GamepadPlugin plugin" OFF)
 
 
 if(PLUGIN_TESTPLUGIN)
@@ -356,6 +358,14 @@ endif()
 
 if(PLUGIN_DEVICEMAPPER)
     add_subdirectory(rdkPlugins/DeviceMapper)
+endif()
+
+if(PLUGIN_OOMCRASH)
+	add_subdirectory(rdkPlugins/OOMCrash)
+endif()
+
+if(PLUGIN_GAMEPAD)
+	add_subdirectory(rdkPlugins/Gamepad)
 endif()
 
 # Export targets in Dobby package

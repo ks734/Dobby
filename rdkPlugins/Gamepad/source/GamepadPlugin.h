@@ -17,24 +17,28 @@
 * limitations under the License.
 */
 
-#ifndef LOCALTIMEPLUGIN_H
-#define LOCALTIMEPLUGIN_H
+#ifndef GPUPLUGIN_H
+#define GPUPLUGIN_H
 
 #include <RdkPluginBase.h>
 
+#include <sys/types.h>
+#include <netinet/in.h>
+
+#include <unistd.h>
+#include <string>
+#include <memory>
+
 /**
- * @brief Dobby LocalTime plugin.
- *
- * This plugin simply creates a symlink to the real /etc/localtime file
- * in the rootfs of the container.
+ * @brief Dobby Gamepad plugin.
  *
  */
-class LocalTimePlugin : public RdkPluginBase
+class GamepadPlugin : public RdkPluginBase
 {
 public:
-    LocalTimePlugin(std::shared_ptr<rt_dobby_schema> &containerConfig,
-                    const std::shared_ptr<DobbyRdkPluginUtils> &utils,
-                    const std::string &rootfsPath);
+    GamepadPlugin(std::shared_ptr<rt_dobby_schema> &containerConfig,
+                  const std::shared_ptr<DobbyRdkPluginUtils> &utils,
+                  const std::string &rootfsPath);
 
 public:
     inline std::string name() const override
@@ -46,16 +50,20 @@ public:
 
 public:
     bool postInstallation() override;
-    bool preCreation() override;
 
 public:
     std::vector<std::string> getDependencies() const override;
 
 private:
+    void addDevices(int64_t major, int64_t minor, int numDevices, const std::string& type, const std::string& mode) const;
+    void addGidMapping(gid_t host_id, gid_t container_id) const;
+    void addAdditionalGid(gid_t gid) const;
+    gid_t getInputGroupId() const;
+
     const std::string mName;
-    const std::string mRootfsPath;
     std::shared_ptr<rt_dobby_schema> mContainerConfig;
+    const std::string mRootfsPath;
     const std::shared_ptr<DobbyRdkPluginUtils> mUtils;
 };
 
-#endif // !defined(LOCALTIMEPLUGIN_H)
+#endif // !defined(GPUPLUGIN_H)

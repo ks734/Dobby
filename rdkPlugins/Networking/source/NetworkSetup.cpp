@@ -188,6 +188,14 @@ std::vector<Netfilter::RuleSet> constructBridgeRules(const std::shared_ptr<Netfi
         }
     };
 
+    if (ipVersion == AF_INET6)
+    {
+        Netfilter::RuleSet::iterator appendFilterRules = appendRuleSet.find(Netfilter::TableType::Filter);
+        // add DobbyInputChain rule to accept Network Discovery Protocol messages, otherwise
+        // the Neigh table (which is equivalent of IPv4 ARP table) will not be able to update
+        appendFilterRules->second.emplace_front("DobbyInputChain -p ICMPv6 -j ACCEPT");
+    }
+
     // add addresses to rules depending on ipVersion
     std::string bridgeAddressRange;
     if (ipVersion == AF_INET)
@@ -309,14 +317,25 @@ Netfilter::RuleSet createAntiSpoofRule(const std::string &vethName,
  */
 Netfilter::RuleSet createDropAllRule(const std::string &vethName)
 {
+    std::list<std::string> rules;
+
     // construct the rule
     char filterRule[128];
     snprintf(filterRule, sizeof(filterRule),
              "DobbyInputChain -i " BRIDGE_NAME " -m physdev --physdev-in %s -j DROP",
              vethName.c_str());
 
+    rules.emplace_back(std::string(filterRule));
+    memset(filterRule, 0, sizeof(filterRule));
+
+    snprintf(filterRule, sizeof(filterRule),
+             "FORWARD -i " BRIDGE_NAME " -m physdev --physdev-in %s -j REJECT",
+             vethName.c_str());
+    rules.emplace_back(std::string(filterRule));
+    memset(filterRule, 0, sizeof(filterRule));
+
     // return the rule in the default filter table
-    return Netfilter::RuleSet {{ Netfilter::TableType::Filter, { filterRule }}};
+    return Netfilter::RuleSet {{ Netfilter::TableType::Filter, rules}};
 }
 
 
@@ -397,7 +416,7 @@ bool NetworkSetup::setupBridgeDevice(const std::shared_ptr<DobbyRdkPluginUtils> 
     std::vector<Netfilter::RuleSet> ipv4RuleSets = constructBridgeRules(netfilter, extIfaces, AF_INET);
     if (ipv4RuleSets.empty())
     {
-        AI_LOG_FN_EXIT();
+        AI_LOG_ERROR_EXIT("failed to setup device bridge due to empty IPv4 ruleset");
         return false;
     }
 
@@ -421,7 +440,7 @@ bool NetworkSetup::setupBridgeDevice(const std::shared_ptr<DobbyRdkPluginUtils> 
     std::vector<Netfilter::RuleSet> ipv6RuleSets = constructBridgeRules(netfilter, extIfaces, AF_INET6);
     if (ipv6RuleSets.empty())
     {
-        AI_LOG_FN_EXIT();
+        AI_LOG_ERROR_EXIT("failed to setup device bridge due to empty IPv6 ruleset");
         return false;
     }
 
@@ -717,7 +736,10 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
 
     // step 3 - create a veth pair for the container, using the name of the
     // first external interface defined in Dobby settings
-    std::string vethName = netlink->createVeth(PEER_NAME, containerPid);
+    std::vector<std::string> takenVeths;
+    utils->getTakenVeths(takenVeths);
+
+    std::string vethName = netlink->createVeth(PEER_NAME, containerPid, takenVeths);
     if (vethName.empty())
     {
         AI_LOG_ERROR_EXIT("failed to create veth pair for container '%s'",
@@ -782,11 +804,29 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
     }
 
     // step 9 - add routing table entry to the container
-    if (!netlink->addRoute(BRIDGE_NAME, helper->ipv6Addr(), 128, IN6ADDR_ANY))
+    // This shouldn't be needed as there is already existing rule for the
+    // bridge itself with lower metric (higher priority) which looks like:
+    // 2080:d0bb:1e::/64 dev dobby0  metric 256 
+    // So this one will take precedence, and will be valid for all
+    // containers
+    /*
+    if (helper->ipv4())
     {
-        AI_LOG_ERROR_EXIT("failed to apply route");
-        return false;
+        if (!netlink->addRoute(BRIDGE_NAME, helper->ipv4Addr(), INADDR_CREATE(255, 255, 255, 255), INADDR_CREATE(0, 0, 0, 0)))
+        {
+            AI_LOG_ERROR_EXIT("failed to apply route");
+            return false;
+        }
     }
+    if (helper->ipv6())
+    {
+        if (!netlink->addRoute(BRIDGE_NAME, helper->ipv6Addr(), 128, IN6ADDR_ANY))
+        {
+            AI_LOG_ERROR_EXIT("failed to apply route");
+            return false;
+        }
+    }
+    */
 
     // step 10 - bring the veth interface outside the container up
     if (!netlink->ifaceUp(vethName))
@@ -794,6 +834,8 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         AI_LOG_ERROR_EXIT("failed to bring up veth interface");
         return false;
     }
+
+    Netfilter::Operation operation = Netfilter::Operation::Append;
 
     // step 11 - add an iptables rule to either drop anything that comes from the
     // veth if a private network is enabled, or to drop anything that doesn't
@@ -804,13 +846,15 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         if (networkType == NetworkType::Nat)
         {
             ipv4RuleSet = createAntiSpoofRule(vethName, helper->ipv4AddrStr(), AF_INET);
+            operation = Netfilter::Operation::Append;
         }
         else if (networkType == NetworkType::None)
         {
             ipv4RuleSet = createDropAllRule(vethName);
+            operation = Netfilter::Operation::Insert;
         }
 
-        if (!netfilter->addRules(ipv4RuleSet, AF_INET, Netfilter::Operation::Insert))
+        if (!netfilter->addRules(ipv4RuleSet, AF_INET, operation))
         {
             AI_LOG_ERROR_EXIT("failed to add iptables rule to drop veth packets");
             return false;
@@ -822,13 +866,15 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         if (networkType == NetworkType::Nat)
         {
             ipv6RuleSet = createAntiSpoofRule(vethName, helper->ipv6AddrStr(), AF_INET6);
+            operation = Netfilter::Operation::Append;
         }
         else if (networkType == NetworkType::None)
         {
             ipv6RuleSet = createDropAllRule(vethName);
+            operation = Netfilter::Operation::Insert;
         }
 
-        if (!netfilter->addRules(ipv6RuleSet, AF_INET6, Netfilter::Operation::Insert))
+        if (!netfilter->addRules(ipv6RuleSet, AF_INET6, operation))
         {
             AI_LOG_ERROR_EXIT("failed to add iptables rule to drop veth packets");
             return false;

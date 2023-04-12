@@ -16,25 +16,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-#ifndef LOCALTIMEPLUGIN_H
-#define LOCALTIMEPLUGIN_H
+/*
+ * File: OOMCrashPlugin.h
+ *
+ */
+#ifndef OOMCRASH_H
+#define OOMCRASH_H
 
 #include <RdkPluginBase.h>
 
+#include <sys/stat.h>
+
 /**
- * @brief Dobby LocalTime plugin.
+ * @brief Dobby RDK OOMCrash Plugin
  *
- * This plugin simply creates a symlink to the real /etc/localtime file
- * in the rootfs of the container.
- *
+ * Creates a file when OOM detected
  */
-class LocalTimePlugin : public RdkPluginBase
+class OOMCrash : public RdkPluginBase
 {
 public:
-    LocalTimePlugin(std::shared_ptr<rt_dobby_schema> &containerConfig,
-                    const std::shared_ptr<DobbyRdkPluginUtils> &utils,
-                    const std::string &rootfsPath);
+    OOMCrash(std::shared_ptr<rt_dobby_schema>& containerConfig,
+                  const std::shared_ptr<DobbyRdkPluginUtils> &utils,
+                  const std::string &rootfsPath);
 
 public:
     inline std::string name() const override
@@ -42,20 +45,26 @@ public:
         return mName;
     };
 
+    // Override to return the appropriate hints for what we implement
     unsigned hookHints() const override;
 
 public:
     bool postInstallation() override;
-    bool preCreation() override;
+    bool postHalt() override;
 
 public:
     std::vector<std::string> getDependencies() const override;
 
 private:
+    bool readCgroup(unsigned long *val);
+    bool checkForOOM();
+    void createFileForOOM();
+    
     const std::string mName;
-    const std::string mRootfsPath;
     std::shared_ptr<rt_dobby_schema> mContainerConfig;
+    const std::string mRootfsPath;
     const std::shared_ptr<DobbyRdkPluginUtils> mUtils;
 };
 
-#endif // !defined(LOCALTIMEPLUGIN_H)
+
+#endif // !defined(OOMCRASH_H)
