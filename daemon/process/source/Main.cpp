@@ -94,7 +94,11 @@ static std::string gDbusAddress;
 static std::string gSettingsFilePath("/etc/dobby.json");
 
 
-
+void isr(int n)
+{
+    AI_LOG_ERROR("in SIGABRT service handler");
+    raise(SIGSEGV);
+}
 
 // -----------------------------------------------------------------------------
 /**
@@ -537,6 +541,7 @@ int main(int argc, char * argv[])
     // threads are spawned
     Dobby::configSignals();
 
+    signal(SIGABRT, isr);
 
     // Initialise tracing on debug builds (warning: this must be done after the
     // Dobby::configSignals() call above, because it spawns threads that mess
