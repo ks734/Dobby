@@ -197,6 +197,7 @@ public:
                   const std::chrono::duration<Rep, Period>& rel_time,
                   Predicate pred)
     {
+        AI_LOG_WARN("Karthi : wait_for entered");
         if (rel_time.count() < 0)
         {
             AI_LOG_DEBUG("Negative wait period, timeout occured");
@@ -207,14 +208,16 @@ public:
     #else
         const struct timespec ts = calcTimeoutAbs(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time));
     #endif
-
+        AI_LOG_WARN("Karthi : Raw timespec.tv_nsec: %09ld\n", ts.tv_nsec);
         while (!pred())
         {
     #if defined(HAS_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
             int err = pthread_cond_timedwait_relative_np(&mCond, lock.mutex()->native_handle(), &ts);
     #else
+            AI_LOG_WARN("Karthi : Before pthread_cond_timedwait");
             int err = pthread_cond_timedwait(&mCond, lock.mutex()->native_handle(), &ts);
     #endif
+            AI_LOG_WARN("Karthi : After pthread_cond_timedwait");
             if (err == ETIMEDOUT)
             {
                 return pred();
