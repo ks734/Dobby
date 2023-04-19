@@ -95,7 +95,9 @@ void DobbyWorkQueue::run()
  */
 bool DobbyWorkQueue::runFor(const std::chrono::milliseconds &msecs)
 {
+    AI_LOG_WARN("Karthi : runFor entered");
     return runUntil(std::chrono::steady_clock::now() + msecs);
+    AI_LOG_WARN("Karthi : runFor exited");
 }
 
 // -----------------------------------------------------------------------------
@@ -111,17 +113,20 @@ bool DobbyWorkQueue::runFor(const std::chrono::milliseconds &msecs)
  */
 bool DobbyWorkQueue::runUntil(const std::chrono::steady_clock::time_point &deadline)
 {
+    AI_LOG_WARN("Karthi : runUntil entered");
     // wait for the next work item added or mTerminateWorkQueue is true
     const auto predicate = [&]()
     {
         return mExitRequested || !mWorkQueue.empty();
     };
 
+    AI_LOG_WARN("Karthi : Before mWorkQueueLock");
     // run the event loop by processing all lambdas posted to the work queue
     std::unique_lock<AICommon::Mutex> locker(mWorkQueueLock);
 
     // store the id of the thread running the loop
     mRunningThreadId = std::this_thread::get_id();
+    AI_LOG_WARN("Karthi : After get_id()");
 
     while (!mExitRequested)
     {
@@ -145,6 +150,7 @@ bool DobbyWorkQueue::runUntil(const std::chrono::steady_clock::time_point &deadl
             locker.lock();
         }
 
+        AI_LOG_WARN("Karthi : Before waiting for the next work item added");
         // wait for the next work item added or mTerminateWorkQueue is true
         if (deadline == std::chrono::steady_clock::time_point::max())
         {
@@ -154,6 +160,7 @@ bool DobbyWorkQueue::runUntil(const std::chrono::steady_clock::time_point &deadl
         {
             break; // timed out
         }
+        AI_LOG_WARN("Karthi : After waiting for the next work item added");
     }
 
     // make a best effort to ensure we leave no work items in the queue
@@ -172,12 +179,14 @@ bool DobbyWorkQueue::runUntil(const std::chrono::steady_clock::time_point &deadl
         mWorkCompleteCond.notify_all();
     }
 
+    AI_LOG_WARN("Karthi : Before clear the running thread id");
     // clear the running thread id
     mRunningThreadId = std::thread::id();
 
     bool result = mExitRequested;
     mExitRequested = false;
 
+    AI_LOG_WARN("Karthi : runUntil exited");
     return result;
 }
 
