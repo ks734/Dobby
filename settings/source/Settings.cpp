@@ -237,6 +237,18 @@ Settings::Settings(const Json::Value& settings)
         }
     }
 
+    {
+        Json::Value localtimeSettings = Json::Path(".defaultPlugins.localtime").resolve(settings);
+        if (!localtimeSettings.isNull())
+        {
+	        if (localtimeSettings.isObject())
+            {
+                mLocalTimeSettings.localtimePath = localtimeSettings["path"].asString();
+                mLocalTimeSettings.localtimeSetTZ = localtimeSettings["setTZ"].asString();
+            }
+        }
+    }
+
     // Process log relay
     {
         Json::Value logRelaySettings = Json::Path(".logRelay").resolve(settings);
@@ -399,6 +411,16 @@ in_addr_t Settings::addressRange() const
 std::vector<std::string> Settings::defaultPlugins() const
 {
     return mDefaultPlugins;
+}
+
+ // -----------------------------------------------------------------------------
+ /**
+ *  @brief
+ *
+ */
+IDobbySettings::LocalTimeSettings Settings::localTimeSettings() const
+{
+    return mLocalTimeSettings;
 }
 
  // -----------------------------------------------------------------------------

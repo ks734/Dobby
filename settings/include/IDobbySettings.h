@@ -189,6 +189,13 @@ public:
      */
     virtual std::vector<std::string> defaultPlugins() const = 0;
 
+    struct LocalTimeSettings
+    {
+        std::string localtimePath;
+        std::string localtimeSetTZ;
+    };
+	
+    virtual LocalTimeSettings localTimeSettings() const = 0;
 
     struct LogRelaySettings
     {
