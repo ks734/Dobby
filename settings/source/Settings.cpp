@@ -218,6 +218,8 @@ Settings::Settings(const Json::Value& settings)
     // Process default plugins
     {
         Json::Value defaultPluginNames = Json::Path(".defaultPlugins").resolve(settings);
+        for (const Json::Value &pluginName : defaultPluginNames)
+            AI_LOG_INFO("default PluginNames = %s",pluginName.asString().c_str());
         if (!defaultPluginNames.isNull())
         {
             if (defaultPluginNames.isArray())
@@ -226,27 +228,25 @@ Settings::Settings(const Json::Value& settings)
                 {
                     if (pluginName.isString())
                         mDefaultPlugins.push_back(pluginName.asString());
+		    else if (pluginName.isObject())
+		    {
+                        if(PluginName.asString().compare("localtime"))
+			{
+                            Json::Value localtimeSettings = Json::Path(".defaultPlugins.localtime").resolve(settings);
+                            AI_LOG_INFO("localtimePath = %s localtimeSetTZ =%s",localtimeSettings["path"].asString().c_str(), localtimeSettings["setTZ"].asString().c_str());
+                            if (!localtimeSettings.isNull())
+                            {
+	                        if (localtimeSettings.isObject())
+                                {
+                                    mLocalTimeSettings.localtimePath = localtimeSettings["path"].asString();
+                                    mLocalTimeSettings.localtimeSetTZ = localtimeSettings["setTZ"].asString();
+                                }
+                            }
+			}
+		    }
                     else
                         AI_LOG_ERROR("invalid entry in defaultPlugins array in JSON settings file");
                 }
-            }
-            else if (defaultPluginNames.isObject())
-            {
-              for (const Json::Value &pluginName : defaultPluginNames)
-                  AI_LOG_INFO("default PluginName = %s",pluginName.asString().c_str());
-              if(defaultPluginNames.asString().compare("localtime"))
-	      {
-                Json::Value localtimeSettings = Json::Path(".defaultPlugins.localtime").resolve(settings);
-                AI_LOG_INFO("localtimePath = %s localtimeSetTZ =%s",localtimeSettings["path"].asString().c_str(), localtimeSettings["setTZ"].asString().c_str());
-                if (!localtimeSettings.isNull())
-                {
-	            if (localtimeSettings.isObject())
-                    {
-                        mLocalTimeSettings.localtimePath = localtimeSettings["path"].asString();
-                        mLocalTimeSettings.localtimeSetTZ = localtimeSettings["setTZ"].asString();
-                    }
-                }
-	      }
             }
             else
             {
