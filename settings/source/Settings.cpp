@@ -230,7 +230,7 @@ Settings::Settings(const Json::Value& settings)
                         mDefaultPlugins.push_back(pluginName.asString());
 		    else if (pluginName.isObject())
 		    {
-                        if(PluginName.asString().compare("localtime"))
+                        if(pluginName.asString().compare("localtime"))
 			{
                             Json::Value localtimeSettings = Json::Path(".defaultPlugins.localtime").resolve(settings);
                             AI_LOG_INFO("localtimePath = %s localtimeSetTZ =%s",localtimeSettings["path"].asString().c_str(), localtimeSettings["setTZ"].asString().c_str());
