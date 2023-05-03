@@ -226,6 +226,11 @@ Settings::Settings(const Json::Value& settings)
                 {
                     if (pluginName.isString())
                         mDefaultPlugins.push_back(pluginName.asString());
+                    else if(pluginName.isObject())
+                    {
+                        for (const auto& value : pluginName.getMemberNames())
+                            mRdkPluginsData[value] = pluginName[value];
+                    }
                     else
                         AI_LOG_ERROR("invalid entry in defaultPlugins array in JSON settings file");
                 }
@@ -399,6 +404,16 @@ in_addr_t Settings::addressRange() const
 std::vector<std::string> Settings::defaultPlugins() const
 {
     return mDefaultPlugins;
+}
+
+ // -----------------------------------------------------------------------------
+ /**
+ *  @brief
+ *
+ */
+Json::Value Settings::rdkPluginsData() const
+{
+    return mRdkPluginsData;
 }
 
  // -----------------------------------------------------------------------------
