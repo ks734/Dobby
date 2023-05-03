@@ -225,7 +225,19 @@ Settings::Settings(const Json::Value& settings)
                 for (const Json::Value &pluginName : defaultPluginNames)
                 {
                     if (pluginName.isString())
+                    {
                         mDefaultPlugins.push_back(pluginName.asString());
+                        mRdkPluginsData = Json::Value:null;
+                    }
+                    else if(pluginName.isObject())
+                    {
+                        for (const auto& value : pluginName.getMemberNames())
+			{
+                            mDefaultPlugins.push_back(value.asString());
+                            mRdkPluginsData[value] = pluginName[value];
+			    AI_LOG_INFO("KARTHI Name = %s Path = %s", value.asString().c_str(), mRdkPluginsData[value]["path"].asString().c_str());
+                        }
+                    }
                     else
                         AI_LOG_ERROR("invalid entry in defaultPlugins array in JSON settings file");
                 }
@@ -399,6 +411,16 @@ in_addr_t Settings::addressRange() const
 std::vector<std::string> Settings::defaultPlugins() const
 {
     return mDefaultPlugins;
+}
+
+ // -----------------------------------------------------------------------------
+ /**
+ *  @brief
+ *
+ */
+Json::Value Settings::rdkPluginsData() const
+{
+    return mRdkPluginsData;
 }
 
  // -----------------------------------------------------------------------------
