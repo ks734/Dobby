@@ -227,7 +227,7 @@ Settings::Settings(const Json::Value& settings)
                     if (pluginName.isString())
                     {
                         mDefaultPlugins.push_back(pluginName.asString());
-                        mRdkPluginsData = Json::Value:null;
+                        mRdkPluginsData = Json::Value::null;
                     }
                     else if(pluginName.isObject())
                     {
@@ -235,7 +235,7 @@ Settings::Settings(const Json::Value& settings)
 			{
                             mDefaultPlugins.push_back(value.asString());
                             mRdkPluginsData[value] = pluginName[value];
-			    AI_LOG_INFO("KARTHI Name = %s Path = %s", value.asString().c_str(), mRdkPluginsData[value]["path"].asString().c_str());
+			    AI_LOG_INFO("KARTHI Name = %s Path = %s", value.c_str(), mRdkPluginsData[value]["path"].asString().c_str());
                         }
                     }
                     else
