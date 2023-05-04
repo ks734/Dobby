@@ -233,7 +233,7 @@ Settings::Settings(const Json::Value& settings)
                     {
                         for (const auto& value : pluginName.getMemberNames())
 			{
-                            mDefaultPlugins.push_back(value.asString());
+                            mDefaultPlugins.push_back(value);
                             mRdkPluginsData[value] = pluginName[value];
 			    AI_LOG_INFO("KARTHI Name = %s Path = %s", value.c_str(), mRdkPluginsData[value]["path"].asString().c_str());
                         }
