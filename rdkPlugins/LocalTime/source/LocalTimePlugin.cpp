@@ -66,8 +66,8 @@ bool LocalTimePlugin::postInstallation()
         std::size_t found = path.find_last_of("/");
         std::string dirPath = path.substr(0, found);
 
-        if (mUtils->mkdirRecursive(dirPath, 0755) || (errno == EEXIST))
-            AI_LOG_INFO("Created dir. %s, Set localtime path %s", dirPath.c_str(), path.c_str());
+        if (mUtils->mkdirRecursive(mRootfsPath + dirPath, 0755) || (errno == EEXIST))
+            AI_LOG_INFO("Set localtime path %s", path.c_str());
         else
             AI_LOG_SYS_ERROR(errno, "failed to create dir. %s", path.c_str());
     }
