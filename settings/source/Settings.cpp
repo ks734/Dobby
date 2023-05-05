@@ -227,13 +227,14 @@ Settings::Settings(const Json::Value& settings)
                     if (pluginName.isString())
                     {
                         mDefaultPlugins.push_back(pluginName.asString());
-                        mRdkPluginsData = Json::Value::null;
+                        mRdkPluginsData[pluginName] = Json::Value::null;
+                        AI_LOG_INFO("KARTHI default pluginName = %s", pluginName.c_str());
                     }
                     else if(pluginName.isObject())
                     {
                         for (const auto& value : pluginName.getMemberNames())
 			{
-                            mDefaultPlugins.push_back(value);
+                            mDefaultPlugins.push_back(value.asString());
                             mRdkPluginsData[value] = pluginName[value];
 			    AI_LOG_INFO("KARTHI Name = %s Path = %s", value.c_str(), mRdkPluginsData[value]["path"].asString().c_str());
                         }
