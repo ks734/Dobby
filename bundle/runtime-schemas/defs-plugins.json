@@ -441,7 +441,8 @@
         "LocalTime": {
             "type": "object",
             "required": [
-                "required"
+                "required",
+                "data"
             ],
             "properties": {
                 "required": {
