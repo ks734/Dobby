@@ -227,7 +227,7 @@ Settings::Settings(const Json::Value& settings)
                     if (pluginName.isString())
                     {
                         mDefaultPlugins.push_back(pluginName.asString());
-                        mRdkPluginsData[pluginName] = Json::Value::null;
+                        mRdkPluginsData[pluginName.asString()] = Json::Value::null;
                         AI_LOG_INFO("KARTHI default pluginName = %s", pluginName.asString().c_str());
                     }
                     else if(pluginName.isObject())
