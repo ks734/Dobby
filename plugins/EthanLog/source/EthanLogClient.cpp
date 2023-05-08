@@ -42,7 +42,7 @@
 
 #define ETHANLOG_MAX_LOG_MSG_LENGTH       512UL
 
-// #define ETHANLOG_DEBUG_DUMP
+#define ETHANLOG_DEBUG_DUMP
 
 
 
@@ -609,6 +609,13 @@ void EthanLogClient::processLogData()
 #if defined(ETHANLOG_DEBUG_DUMP)
                 dumpMessage(fields, numFields);
 #endif
+                for (int i=0; i < numFields; i++)
+                {
+                  std::string ptr;
+                  ptr = (char *)fields[i].iov_base;
+                  AI_LOG_INFO("KARTHI fields[%d].iov_base = %ld", i, ptr.size());
+                  AI_LOG_INFO("KARTHI fields[%d].iov_len = %ld", i, fields[i].iov_len);
+                }
                 int rc = sd_journal_sendv(fields, numFields);
                 if (rc < 0)
                     AI_LOG_SYS_ERROR(-rc, "failed to write to journald");
