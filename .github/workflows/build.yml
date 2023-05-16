@@ -36,5 +36,5 @@ jobs:
       - name: run unit-tests
         run: |
           sudo touch /dev/loop-control
-          $GITHUB_WORKSPACE/build/gtest/DobbyUtilsTest/utilsTest
+          sudo $GITHUB_WORKSPACE/build/gtest/DobbyUtilsTest/utilsTest
 
