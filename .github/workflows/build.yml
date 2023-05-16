@@ -32,3 +32,8 @@ jobs:
          cd build
          cmake -DRDK_PLATFORM=DEV_VM -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.extra_flags }} ${{ env.optional_plugins }} ..
          make -j $(nproc)
+      
+      - name: run unit-tests
+        run: |
+          $GITHUB_WORKSPACE/build/gtest/DobbyUtilsTest/utilsTest
+
