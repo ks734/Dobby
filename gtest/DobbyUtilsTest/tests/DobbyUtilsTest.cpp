@@ -83,7 +83,7 @@ TEST_F(DobbyUtilsTest, TestAttachFileToLoopDevice)
             AI_LOG_ERROR("Opened loop mount =%s\n", loopDevPath.c_str());
         }
 
-        int fileFd = open("/tmp/test1", O_CREAT | O_RDWR);
+        int fileFd = open("/tmp/test1", O_CREAT | O_RDWR, 0644);
 
         EXPECT_TRUE(test.attachFileToLoopDevice(loopDevFd,fileFd));
 
