@@ -76,12 +76,11 @@ TEST_F(DobbyUtilsTest, TestAttachFileToLoopDevice)
 
         if (loopDevFd < 0)
         {
-            printf("failed to open loop device\n");
-            EXPECT_FALSE(true);
+            AI_LOG_ERROR("failed to open loop device\n");
         }
         else
         {
-            printf("Opened loop mount =%s\n", loopDevPath.c_str());
+            AI_LOG_ERROR("Opened loop mount =%s\n", loopDevPath.c_str());
         }
 
         int fileFd = open("/tmp/test1", O_CREAT | O_RDWR);
@@ -90,8 +89,7 @@ TEST_F(DobbyUtilsTest, TestAttachFileToLoopDevice)
 
         if (close(loopDevFd) != 0)
         {
-            printf("failed to close file\n");
-            EXPECT_FALSE(true);
+            AI_LOG_ERROR("failed to close file\n");
         }
         test.rmdirRecursive("/tmp/test1");
 }
