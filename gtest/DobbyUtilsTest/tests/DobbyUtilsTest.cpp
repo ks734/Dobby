@@ -18,6 +18,7 @@
 */
 
 #include <gtest/gtest.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include "DobbyTimer.h"
 #include "ContainerId.h"
