@@ -420,7 +420,7 @@ void EthanLogClient::processLogData()
     // 4 mandatory fields times 3 minimum characters)
     while (mMsgLen >= (2 + (3 * 3)))
     {
-        // find the message start point, if no start found discard everything */
+        // find the message start point, if no start found discard everything
         char *msgStart = (char*)memchr(mMsgBuf, RECORD_DELIM, mMsgLen);
         if (!msgStart)
         {
@@ -611,10 +611,13 @@ void EthanLogClient::processLogData()
 #endif
                 for (int i=0; i < numFields; i++)
                 {
-                  std::string ptr;
+                  char *ptr;
                   ptr = (char *)fields[i].iov_base;
-                  AI_LOG_INFO("KARTHI fields[%d].iov_base = %ld", i, ptr.size());
-                  AI_LOG_INFO("KARTHI fields[%d].iov_len = %ld", i, fields[i].iov_len);
+                  if(ptr != NULL)
+                  {
+                    AI_LOG_INFO("KARTHI fields[%d].iov_base = %ld", i, strlen(ptr));
+                    AI_LOG_INFO("KARTHI fields[%d].iov_len = %ld", i, fields[i].iov_len);
+                  }
                 }
                 int rc = sd_journal_sendv(fields, numFields);
                 if (rc < 0)
