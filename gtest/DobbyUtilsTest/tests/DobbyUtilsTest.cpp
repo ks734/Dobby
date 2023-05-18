@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include "DobbyTimer.h"
 #include "ContainerId.h"
+#include "Logging.h"
 #define private public
 #include "DobbyUtils.h"
 
