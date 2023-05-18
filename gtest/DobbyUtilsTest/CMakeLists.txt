@@ -28,14 +28,12 @@ add_library(Utils SHARED
             ../../utils/source/DobbyUtils.cpp
             ../../utils/source/ContainerId.cpp
             ../../utils/source/DobbyTimer.cpp
-            ../../AppInfrastructure/Logging/source/Logging.cpp
             )
 
 target_include_directories(Utils
                 PUBLIC
                 ../../utils/include
                 ../../utils/source
-                ../../AppInfrastructure/Logging/include
                 ../../AppInfrastructure/Common/include
                 )
 
