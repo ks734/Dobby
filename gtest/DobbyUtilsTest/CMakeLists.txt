@@ -20,7 +20,6 @@ project(DobbyUtilsTest)
 
 set(CMAKE_CXX_STANDARD 11)
 
-include(CTest)
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
@@ -42,9 +41,8 @@ target_include_directories(Utils
 
 file(GLOB TESTS tests/*.cpp)
 
-add_executable(utilsTest ${TESTS})
-add_test(NAME AllTestsInUtils COMMAND utilsTest)
+add_executable(${PROJECT_NAME} ${TESTS})
 
-target_link_libraries(utilsTest Utils ${GTEST_LIBRARIES} gtest_main pthread)
+target_link_libraries(${PROJECT_NAME} Utils ${GTEST_LIBRARIES} gtest_main pthread)
 
-install(TARGETS utilsTest DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
