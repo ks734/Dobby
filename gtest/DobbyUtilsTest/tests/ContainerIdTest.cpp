@@ -23,13 +23,7 @@ using namespace std;
 
 class ContainerIdTest : public ::testing::Test {
          protected:
-                 void SetUp() override 
-		 {
-                 }
-                 void TearDown() override 
-		 {
-                 }
-	ContainerId tid,rid;
+             ContainerId tid,rid;
 };
 
 TEST_F(ContainerIdTest,CheckNumeric)
