@@ -277,6 +277,7 @@ bool DobbyProxy::invokeMethod(const char *interface_,
                               const AI_IPC::VariantList& params_,
                               AI_IPC::VariantList& returns_) const
 {
+    AI_LOG_INFO("KARTHI invokeMethod called");
     const AI_IPC::Method method(mServiceName, mObjectName, interface_, method_);
     if (!mIpcService->invokeMethod(method, params_, returns_))
     {
@@ -606,7 +607,7 @@ int32_t DobbyProxy::startContainerFromBundle(const std::string& id,
                                              const std::vector<std::string>& envVars /*= std::vector<std::string>()*/) const
 {
     AI_LOG_FN_ENTRY();
-
+    AI_LOG_INFO("KARTHI startContainerFromBundle enter");
     // convert file descriptors into unixfd objects
     std::vector<AI_IPC::UnixFd> fds;
     for (int fd : files)
@@ -629,7 +630,7 @@ int32_t DobbyProxy::startContainerFromBundle(const std::string& id,
             result = -1;
         }
     }
-
+    AI_LOG_INFO("KARTHI startContainerFromBundle exit");
     AI_LOG_FN_EXIT();
     return result;
 }
