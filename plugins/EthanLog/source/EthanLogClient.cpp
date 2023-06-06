@@ -620,6 +620,7 @@ void EthanLogClient::processLogData()
                         AI_LOG_INFO("KARTHI fields[%d].iov_length = %ld %ld %ld", i, p.size(), strlen(ptr), fields[i].iov_len);
                         AI_LOG_INFO("KARTHI fields[%d].iov_base = %s", i, fields[i].iov_base);
                     }
+                }
                 int rc = sd_journal_sendv(fields, numFields);
                 if (rc < 0)
                     AI_LOG_SYS_ERROR(-rc, "failed to write to journald");
