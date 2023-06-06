@@ -1529,10 +1529,11 @@ void Dobby::list(std::shared_ptr<AI_IPC::IAsyncReplySender> replySender)
     auto doListLambda =
         [manager = mManager, replySender]()
         {
+            AI_LOG_INFO("KARTHI Before listContainers");
             // Try and get container stats
             const std::list<std::pair<int32_t, ContainerId>> containers =
                 manager->listContainers();
-
+            AI_LOG_INFO("KARTHI After listContainers");     
             // We need to split the descriptors and id list as they're different type
             std::vector<int32_t> cds(containers.size(), -1);
             std::vector<std::string> ids(containers.size());
@@ -1562,7 +1563,7 @@ void Dobby::list(std::shared_ptr<AI_IPC::IAsyncReplySender> replySender)
     {
         AI_LOG_ERROR("failed to send reply");
     }
-
+    AI_LOG_INFO("KARTHI list exit");
     AI_LOG_FN_EXIT();
 }
 
