@@ -97,7 +97,8 @@ static std::string gSettingsFilePath("/etc/dobby.json");
 void isr(int n)
 {
     AI_LOG_ERROR("in SIGABRT service handler");
-    raise(SIGSEGV);
+    system("systemctl status wpeframework > /opt/logs/wpe_status.log");
+    system("systemctl status dbus > /opt/logs/dbus_status.log");
 }
 
 // -----------------------------------------------------------------------------
