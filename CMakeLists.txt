@@ -291,9 +291,9 @@ option(PLUGIN_STORAGE "Include Storage plugin" ON)
 option(PLUGIN_MINIDUMP "Include Minidump plugin" ON)
 option(PLUGIN_THUNDER "Include Thunder plugin" ON)
 option(PLUGIN_OOMCRASH "Include OOMCrash plugin" ON)
+option(PLUGIN_TESTPLUGIN "Include TestPlugin plugin" ON)
 
 # Optional RDK plugins
-option(PLUGIN_TESTPLUGIN "Include TestPlugin plugin" OFF)
 option(PLUGIN_GPU "Include GPU plugin" OFF)
 option(PLUGIN_LOCALTIME "Include LocalTime plugin" OFF)
 option(PLUGIN_RTSCHEDULING "Include RtScheduling plugin" OFF)
