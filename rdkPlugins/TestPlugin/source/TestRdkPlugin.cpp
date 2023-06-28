@@ -101,7 +101,7 @@ bool TestRdkPlugin::preCreation()
     }
 
     struct stat buffer;
-    if (stat("/opt/netflix/NTRestartIIDOverride, &buffer) == 0)
+    if (stat("/opt/netflix/NTRestartIIDOverride", &buffer) == 0)
     {
       mUtils->addEnvironmentVar("NF_UI_QUERY_STRING=iid=6bc7145d&source_type=37&additionalDataUrl=undefined");
       AI_LOG_INFO("Env. var NF_UI_QUERY_STRING set");
