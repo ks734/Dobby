@@ -19,6 +19,8 @@
 
 #include "TestRdkPlugin.h"
 
+#include <sys/stat.h>
+
 /**
  * Need to do this at the start of every plugin to make sure the correct
  * C methods are visible to allow PluginLauncher to find the plugin
@@ -96,6 +98,13 @@ bool TestRdkPlugin::preCreation()
     {
         AI_LOG_WARN("Container config is null");
         return false;
+    }
+
+    struct stat buffer;
+    if (stat("/opt/netflix/NTRestartIIDOverride, &buffer) == 0)
+    {
+      mUtils->addEnvironmentVar("NF_UI_QUERY_STRING=iid=6bc7145d&source_type=37&additionalDataUrl=undefined");
+      AI_LOG_INFO("Env. var NF_UI_QUERY_STRING set");
     }
 
     AI_LOG_INFO("This hook is running for container with hostname %s", mUtils->getContainerId().c_str());
