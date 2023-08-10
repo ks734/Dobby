@@ -28,6 +28,7 @@
 #include <array>
 #include <atomic>
 #include <algorithm>
+#include <iostream>
 #include <grp.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -1963,6 +1964,7 @@ bool DobbySpecConfig::processMounts(const Json::Value& value,
 
             // Create an array item for the RDK Storage plugin
             rdkPluginData["loopback"][numLoopMounts] = loopMountData;
+	    std::cout << "LoopMountData:" << loopMountData << std::endl;
             numLoopMounts++;
         }
         else
@@ -2003,6 +2005,7 @@ bool DobbySpecConfig::processMounts(const Json::Value& value,
     if (numLoopMounts > 0)
     {
         mRdkPluginsJson[RDK_STORAGE_PLUGIN_NAME]["data"] = rdkPluginData;
+	std::cout << "rdkPluginData:" << rdkPluginData << std::endl;
         mRdkPluginsJson[RDK_STORAGE_PLUGIN_NAME]["required"] = false;
     }
 
@@ -2615,6 +2618,8 @@ bool DobbySpecConfig::processRdkPlugins(const Json::Value& value,
 
         for (const auto& pluginName : value.getMemberNames())
         {
+	    std::cout << "Before insertIntoRdkPluginJson" << std::endl;
+	    std::cout << "pluginName:" << pluginName << "pluginData:" << value[pluginName]["data"] << std::endl;
             // insert the rdkPlugins field into the json parsed from the spec
             insertIntoRdkPluginJson(pluginName, value[pluginName]["data"]);
 
@@ -2639,6 +2644,7 @@ bool DobbySpecConfig::processRdkPlugins(const Json::Value& value,
         bool pluginRequired = pluginJson["required"].asBool();
         const std::string pluginDependsOn = (pluginJson["dependsOn"].isNull() ? "[]" : jsonToString(pluginJson["dependsOn"]));
 
+	std::cout << "pluginName:" << pluginName << "pluginData:" << pluginData << std::endl;
         // add parsed rdkPlugin into mRdkPlugins for Dobby hooks
         mRdkPlugins.emplace(pluginName, pluginJson);
 
