@@ -1964,7 +1964,7 @@ bool DobbySpecConfig::processMounts(const Json::Value& value,
 
             // Create an array item for the RDK Storage plugin
             rdkPluginData["loopback"][numLoopMounts] = loopMountData;
-	    std::cout << "LoopMountData:" << loopMountData << std::endl;
+	    std::cout << "#DBG : LoopMountData:" << loopMountData << std::flush;
             numLoopMounts++;
         }
         else
@@ -2005,7 +2005,7 @@ bool DobbySpecConfig::processMounts(const Json::Value& value,
     if (numLoopMounts > 0)
     {
         mRdkPluginsJson[RDK_STORAGE_PLUGIN_NAME]["data"] = rdkPluginData;
-	std::cout << "rdkPluginData:" << rdkPluginData << std::endl;
+	std::cout << "#DBG : rdkPluginData:" << rdkPluginData << std::flush;
         mRdkPluginsJson[RDK_STORAGE_PLUGIN_NAME]["required"] = false;
     }
 
@@ -2618,8 +2618,8 @@ bool DobbySpecConfig::processRdkPlugins(const Json::Value& value,
 
         for (const auto& pluginName : value.getMemberNames())
         {
-	    std::cout << "Before insertIntoRdkPluginJson" << std::endl;
-	    std::cout << "pluginName:" << pluginName << "pluginData:" << value[pluginName]["data"] << std::endl;
+	    std::cout << "#DBG : Before insertIntoRdkPluginJson" << std::flush;
+	    std::cout << "#DBG : pluginName:" << pluginName << "pluginData:" << value[pluginName]["data"] << std::flush;
             // insert the rdkPlugins field into the json parsed from the spec
             insertIntoRdkPluginJson(pluginName, value[pluginName]["data"]);
 
@@ -2644,7 +2644,7 @@ bool DobbySpecConfig::processRdkPlugins(const Json::Value& value,
         bool pluginRequired = pluginJson["required"].asBool();
         const std::string pluginDependsOn = (pluginJson["dependsOn"].isNull() ? "[]" : jsonToString(pluginJson["dependsOn"]));
 
-	std::cout << "pluginName:" << pluginName << "pluginData:" << pluginData << std::endl;
+	std::cout << "#DBG : pluginName:" << pluginName << "pluginData:" << pluginData << std::flush;
         // add parsed rdkPlugin into mRdkPlugins for Dobby hooks
         mRdkPlugins.emplace(pluginName, pluginJson);
 
