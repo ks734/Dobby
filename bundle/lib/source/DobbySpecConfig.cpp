@@ -2631,7 +2631,7 @@ bool DobbySpecConfig::processRdkPlugins(const Json::Value& value,
 	    std::cout << "#DBG : Before insertIntoRdkPluginJson" ;
 	    std::cout << "#DBG : pluginName:" << pluginName << "pluginData:" << value[pluginName]["data"];
             printf("#DBG : Before insertIntoRdkPluginJson");
-            printf("%s %s\n",pluginName.c_str(),value[pluginName]["data"].c_str());
+            printf("%s %s\n",pluginName.c_str(),jsonToString(value[pluginName]["data"]).c_str());
             fflush(stdout);
             
             // insert the rdkPlugins field into the json parsed from the spec
@@ -2661,7 +2661,7 @@ bool DobbySpecConfig::processRdkPlugins(const Json::Value& value,
 	std::cout << "#DBG : pluginName:" << pluginName << "pluginData:" << pluginData;
         std::cout.flush();
         printf("final rdkPlugins\n");
-        printf("%s %s\n",pluginName.c_str(),value[pluginName]["data"].c_str());
+        printf("%s %s\n",pluginName.c_str(),jsonToString(value[pluginName]["data"]).c_str());
         fflush(stdout);
         // add parsed rdkPlugin into mRdkPlugins for Dobby hooks
         mRdkPlugins.emplace(pluginName, pluginJson);
