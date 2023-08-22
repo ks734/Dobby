@@ -2576,7 +2576,7 @@ void DobbySpecConfig::insertIntoRdkPluginJson(const std::string& pluginName,
             // if plugin data member is not an array, we can use the data from
             // the spec's rdkPlugin section to overwrite the member.
             existingData[dataMember] = pluginData[dataMember];
-            AI_LOG_WARN("#DBG: plugin data member is not an array : %s", jsonToString(pluginData[dataMember]));
+            AI_LOG_WARN("#DBG: plugin data member is not an array : %s", jsonToString(pluginData[dataMember]).c_str());
         }
         else
         {
@@ -2584,16 +2584,16 @@ void DobbySpecConfig::insertIntoRdkPluginJson(const std::string& pluginName,
             // append the new array members to the existing array if there is one
             if (!existingData[dataMember].isNull())
             {
+                AI_LOG_WARN("#DBG: plugin data member an array,append : %s", jsonToString(pluginData[dataMember]).c_str());
                 for (const auto& arrayElement : pluginData[dataMember])
                 {
                     existingData[dataMember].append(arrayElement);
-                    AI_LOG_WARN("#DBG: plugin data member an array,append : %s", arrayElement.c_str());
                 }
             }
             else
             {
                 existingData[dataMember] = pluginData[dataMember];
-                AI_LOG_WARN("#DBG: plugin data member is an array : %s", jsonToString(pluginData[dataMember]));
+                AI_LOG_WARN("#DBG: plugin data member is an array : %s", jsonToString(pluginData[dataMember]).c_str());
             }
         }
     }
