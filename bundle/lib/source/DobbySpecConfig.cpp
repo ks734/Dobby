@@ -1586,7 +1586,6 @@ bool DobbySpecConfig::processNetwork(const Json::Value& value,
         rdkPluginData["dnsmasq"] = true;
 #endif
         rdkPluginData["ipv4"] = true;
-	rdkPluginData["ipv6"] = true;
     }
     else if (type == "open")
     {
