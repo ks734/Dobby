@@ -218,6 +218,7 @@ Settings::Settings(const Json::Value& settings)
     // Process default plugins
     {
         Json::Value defaultPluginNames = Json::Path(".defaultPlugins").resolve(settings);
+	AI_LOG_WARN("#DBG : Inside settings defaultPluginNames : %s",jsonToString(defaultPluginNames).c_str());
         if (!defaultPluginNames.isNull())
         {
             if (defaultPluginNames.isArray())
