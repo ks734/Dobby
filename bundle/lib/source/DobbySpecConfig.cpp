@@ -622,10 +622,12 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
 
     // step 6.5 - add any default plugins in the settings file
     Json::Value rdkPluginData = mRdkPluginsData;
+    AI_LOG_WARN("#DBG : Settings file rdkPluginData : %s",jsonToString(rdkPluginData).c_str());
     for (const auto& pluginName : mDefaultPlugins)
     {
         mRdkPluginsJson[pluginName]["data"] = rdkPluginData[pluginName];
         mRdkPluginsJson[pluginName]["required"] = false;
+	AI_LOG_WARN("#DBG : mRdkPluginsJson[%s]["data"] : %s", pluginName, jsonToString(rdkPluginData[pluginName]).c_str());
     }
 
     // step 7 - process RDK plugins json into dictionary
@@ -2566,6 +2568,7 @@ void DobbySpecConfig::insertIntoRdkPluginJson(const std::string& pluginName,
                                               const Json::Value& pluginData)
 {
     Json::Value& existingData = mRdkPluginsJson[pluginName]["data"];
+    AI_LOG_WARN("#DBG: Inside insertIntoRdkPluginJson : %s", jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
 
     // iterate through all data members in the RDK plugin's data field
     for (const auto& dataMember : pluginData.getMemberNames())
