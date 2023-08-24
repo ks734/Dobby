@@ -627,7 +627,7 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
     {
         mRdkPluginsJson[pluginName]["data"] = rdkPluginData[pluginName];
         mRdkPluginsJson[pluginName]["required"] = false;
-	AI_LOG_WARN("#DBG : mRdkPluginsJson[%s]["data"] : %s", pluginName, jsonToString(rdkPluginData[pluginName]).c_str());
+	AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] : %s", pluginName, jsonToString(rdkPluginData[pluginName]).c_str());
     }
 
     // step 7 - process RDK plugins json into dictionary
