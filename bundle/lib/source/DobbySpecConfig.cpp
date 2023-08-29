@@ -625,9 +625,19 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
     AI_LOG_WARN("#DBG : Settings file rdkPluginData : %s",jsonToString(rdkPluginData).c_str());
     for (const auto& pluginName : mDefaultPlugins)
     {
-        mRdkPluginsJson[pluginName]["data"] = rdkPluginData[pluginName];
-        mRdkPluginsJson[pluginName]["required"] = false;
-	AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] : %s", pluginName, jsonToString(rdkPluginData[pluginName]).c_str());
+	if (!mRdkPluginsJson[pluginName]["data"].isNull())
+        {
+   	    AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] before append : %s", pluginName.c_str(), jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
+            mRdkPluginsJson[pluginName]["data"].append(rdkPluginData[pluginName]);
+	    AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] after append : %s", pluginName.c_str(), jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
+        }
+	else
+	{
+            mRdkPluginsJson[pluginName]["data"] = rdkPluginData[pluginName];
+	    AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] is Null : %s", pluginName.c_str(), jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
+	}
+	    mRdkPluginsJson[pluginName]["required"] = false;
+	AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] : %s", pluginName.c_str(), jsonToString(rdkPluginData[pluginName]).c_str());
     }
 
     // step 7 - process RDK plugins json into dictionary
