@@ -636,7 +636,7 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
                  // if plugin data member is not an array, we can use the data from
                  // the spec's rdkPlugin section to overwrite the member.
                  existingData[dataMember] = rdkPluginData[pluginName][dataMember];
-                 AI_LOG_WARN("#DBG: plugin data member is not an array : %s", jsonToString(pluginData[dataMember]).c_str());
+                 AI_LOG_WARN("#DBG: plugin data member is not an array : %s", jsonToString(rdkPluginData[pluginName][dataMember]).c_str());
             }
             else
             {
@@ -644,7 +644,7 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
                 // append the new array members to the existing array if there is one
                 if (!existingData[dataMember].isNull())
                 {
-                    AI_LOG_WARN("#DBG: plugin data member an array,append : %s", jsonToString(pluginData[dataMember]).c_str());
+                    AI_LOG_WARN("#DBG: plugin data member an array,append : %s", jsonToString(rdkPluginData[pluginName][dataMember]).c_str());
                     for (const auto& arrayElement : rdkPluginData[pluginName][dataMember])
                     {
                         existingData[dataMember].append(arrayElement);
@@ -653,7 +653,7 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
                 else
                 {
                     existingData[dataMember] = rdkPluginData[pluginName][dataMember];
-                    AI_LOG_WARN("#DBG: plugin data member is an array : %s", jsonToString(pluginData[dataMember]).c_str());
+                    AI_LOG_WARN("#DBG: plugin data member is an array : %s", jsonToString(rdkPluginData[pluginName][dataMember]).c_str());
                 }
             }
 	}
