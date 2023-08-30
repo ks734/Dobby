@@ -625,18 +625,39 @@ bool DobbySpecConfig::parseSpec(ctemplate::TemplateDictionary* dictionary,
     AI_LOG_WARN("#DBG : Settings file rdkPluginData : %s",jsonToString(rdkPluginData).c_str());
     for (const auto& pluginName : mDefaultPlugins)
     {
-	if (!mRdkPluginsJson[pluginName]["data"].isNull())
+	Json::Value& existingData = mRdkPluginsJson[pluginName]["data"];
+        AI_LOG_WARN("#DBG: Inside insertIntoRdkPluginJson : %s", jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
+
+        // iterate through all data members in the RDK plugin's data field
+        for (const auto& dataMember : rdkPluginData[pluginName].getMemberNames())
         {
-   	    AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] before append : %s", pluginName.c_str(), jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
-            mRdkPluginsJson[pluginName]["data"].append(rdkPluginData[pluginName]);
-	    AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] after append : %s", pluginName.c_str(), jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
-        }
-	else
-	{
-            mRdkPluginsJson[pluginName]["data"] = rdkPluginData[pluginName];
-	    AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] is Null : %s", pluginName.c_str(), jsonToString(mRdkPluginsJson[pluginName]["data"]).c_str());
+            if (!rdkPluginData[pluginName][dataMember].isArray())
+            {
+                 // if plugin data member is not an array, we can use the data from
+                 // the spec's rdkPlugin section to overwrite the member.
+                 existingData[dataMember] = rdkPluginData[pluginName][dataMember];
+                 AI_LOG_WARN("#DBG: plugin data member is not an array : %s", jsonToString(pluginData[dataMember]).c_str());
+            }
+            else
+            {
+                // plugin member is an array, so instead of overwriting, we should
+                // append the new array members to the existing array if there is one
+                if (!existingData[dataMember].isNull())
+                {
+                    AI_LOG_WARN("#DBG: plugin data member an array,append : %s", jsonToString(pluginData[dataMember]).c_str());
+                    for (const auto& arrayElement : rdkPluginData[pluginName][dataMember])
+                    {
+                        existingData[dataMember].append(arrayElement);
+                    }
+                }
+                else
+                {
+                    existingData[dataMember] = rdkPluginData[pluginName][dataMember];
+                    AI_LOG_WARN("#DBG: plugin data member is an array : %s", jsonToString(pluginData[dataMember]).c_str());
+                }
+            }
 	}
-	    mRdkPluginsJson[pluginName]["required"] = false;
+	mRdkPluginsJson[pluginName]["required"] = false;
 	AI_LOG_WARN("#DBG : mRdkPluginsJson[%s][data] : %s", pluginName.c_str(), jsonToString(rdkPluginData[pluginName]).c_str());
     }
 
