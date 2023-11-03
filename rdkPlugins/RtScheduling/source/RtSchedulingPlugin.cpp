@@ -26,7 +26,7 @@
 #include <limits.h>
 
 // default rt priority if none set
-#define DEFAULT_RTPRIORITY 6
+#define DEFAULT_RTPRIORITY 0
 
 
 REGISTER_RDK_PLUGIN(RtSchedulingPlugin);
@@ -146,15 +146,6 @@ bool RtSchedulingPlugin::createRuntime()
     if (!containerPid)
     {
         AI_LOG_ERROR_EXIT("couldn't find container pid");
-        return false;
-    }
-
-    // set default rt limit
-    struct sched_param schedParam;
-    schedParam.sched_priority = rtPriorityDefault;
-    if (sched_setscheduler(containerPid, SCHED_RR, &schedParam) != 0)
-    {
-        AI_LOG_SYS_ERROR_EXIT(errno, "failed to set RR scheduling policy");
         return false;
     }
 
