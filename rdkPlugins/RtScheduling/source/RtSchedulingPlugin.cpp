@@ -149,6 +149,15 @@ bool RtSchedulingPlugin::createRuntime()
         return false;
     }
 
+    // set default rt limit
+    struct sched_param schedParam;
+    schedParam.sched_priority = rtPriorityDefault;
+    if (sched_setscheduler(containerPid, SCHED_OTHER, &schedParam) != 0)
+    {
+        AI_LOG_SYS_ERROR_EXIT(errno, "failed to set SCHED_OTHER scheduling policy");
+        return false;
+    }
+  
     AI_LOG_FN_EXIT();
     return true;
 }
