@@ -67,10 +67,12 @@ bool RtSchedulingPlugin::postInstallation()
     {
         rtPriorityLimit = DEFAULT_RTPRIORITY;
     }
-
-    // force to range 1 - 99
-    rtPriorityLimit = std::min<int>(rtPriorityLimit, 99);
-    rtPriorityLimit = std::max<int>(rtPriorityLimit, 1);
+    else
+    {
+        // force to range 1 - 99
+        rtPriorityLimit = std::min<int>(rtPriorityLimit, 99);
+        rtPriorityLimit = std::max<int>(rtPriorityLimit, 1);
+    }
 
     for (int i = 0; i < mConfig->process->rlimits_len; i++)
     {
@@ -124,18 +126,23 @@ bool RtSchedulingPlugin::createRuntime()
     {
         rtPriorityLimit = DEFAULT_RTPRIORITY;
     }
+    else
+    {
+        // force to range 1 - 99
+        rtPriorityLimit = std::min<int>(rtPriorityLimit, 99);
+        rtPriorityLimit = std::max<int>(rtPriorityLimit, 1);
+    }
+  
     int rtPriorityDefault = mConfig->rdk_plugins->rtscheduling->data->rtdefault;
     if (rtPriorityDefault == 0)
     {
         rtPriorityDefault = DEFAULT_RTPRIORITY;
     }
-
-    // force to range 1 - 99
-    rtPriorityLimit = std::min<int>(rtPriorityLimit, 99);
-    rtPriorityLimit = std::max<int>(rtPriorityLimit, 1);
-    rtPriorityDefault = std::min<int>(rtPriorityDefault, 99);
-    rtPriorityDefault = std::max<int>(rtPriorityDefault, 1);
-
+    else
+    {
+        rtPriorityDefault = std::min<int>(rtPriorityDefault, 99);
+        rtPriorityDefault = std::max<int>(rtPriorityDefault, 1);
+    }
     if (rtPriorityDefault > rtPriorityLimit)
     {
         AI_LOG_WARN("the default rt priority is higher than the limit");
@@ -149,15 +156,28 @@ bool RtSchedulingPlugin::createRuntime()
         return false;
     }
 
-    // set default rt limit
-    struct sched_param schedParam;
-    schedParam.sched_priority = rtPriorityDefault;
-    if (sched_setscheduler(containerPid, SCHED_OTHER, &schedParam) != 0)
+    if (rtPriorityDefault == 0)
     {
-        AI_LOG_SYS_ERROR_EXIT(errno, "failed to set SCHED_OTHER scheduling policy");
-        return false;
+        // set default rt limit
+        struct sched_param schedParam;
+        schedParam.sched_priority = rtPriorityDefault;
+        if (sched_setscheduler(containerPid, SCHED_OTHER, &schedParam) != 0)
+        {
+            AI_LOG_SYS_ERROR_EXIT(errno, "failed to set SCHED_OTHER scheduling policy");
+            return false;
+        }
     }
-  
+    else
+    {
+        // set default rt limit
+        struct sched_param schedParam;
+        schedParam.sched_priority = rtPriorityDefault;
+        if (sched_setscheduler(containerPid, SCHED_RR, &schedParam) != 0)
+        {
+            AI_LOG_SYS_ERROR_EXIT(errno, "failed to set SCHED_RR scheduling policy");
+            return false;
+        }
+    }
     AI_LOG_FN_EXIT();
     return true;
 }
