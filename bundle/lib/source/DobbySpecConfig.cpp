@@ -932,7 +932,8 @@ bool DobbySpecConfig::processRtPriority(const Json::Value& value,
             AI_LOG_ERROR("invalid rtPriority field");
             return false;
         }
-
+        
+        const Json::Value& rtdefault = value["rtdefault"];
         const Json::Value& default_ = value["default"];
         if (default_.isIntegral())
         {
@@ -944,6 +945,7 @@ bool DobbySpecConfig::processRtPriority(const Json::Value& value,
             return false;
         }
 
+        const Json::Value& rtlimit = value["rtlimit"];
         const Json::Value& limit = value["limit"];
         if (limit.isIntegral())
         {
@@ -956,6 +958,8 @@ bool DobbySpecConfig::processRtPriority(const Json::Value& value,
         }
     }
 
+    AI_LOG_WARN("###DBG: rtPriorityDefault = %d value[rtdefault]=%d", rtPriorityDefault, rtdefault.asInt());
+    AI_LOG_WARN("###DBG: rtPriorityLimit = %d value[rtlimit]=%d", rtPriorityLimit, rtlimit.asInt());
     // Write values to the rdk plugin
     Json::Value rdkPluginData;
     rdkPluginData["rtlimit"] = rtPriorityLimit;
