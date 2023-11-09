@@ -156,6 +156,7 @@ bool RtSchedulingPlugin::createRuntime()
         return false;
     }
 
+    AI_LOG_WARN("###DBG : rtPriorityDefault = %d", rtPriorityDefault); 
     if (rtPriorityDefault == 0)
     {
         // set default rt limit
