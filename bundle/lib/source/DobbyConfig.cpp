@@ -366,7 +366,7 @@ bool DobbyConfig::enableSTrace(const std::string& logsDir)
 
     {
         // add  "/usr/bin/strace -o logs -f " before the rest of command args
-        const std::vector<std::string> params{"/usr/bin/strace", "-o", logsPath, "-f"};
+        const std::vector<std::string> params{"/usr/bin/strace", "-t -o", logsPath, "-f"};
 
         std::lock_guard<std::mutex> locker(mLock);
         size_t new_args_len = cfg->process->args_len + params.size();
