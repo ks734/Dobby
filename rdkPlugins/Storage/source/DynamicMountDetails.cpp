@@ -93,10 +93,10 @@ bool DynamicMountDetails::onCreateRuntime() const
                 // Creating the file first ensures an inode exists for the
                 // bind mount to target.
                 AI_LOG_INFO("####DBG: Dynamic plugin: onCreateRuntime: IsFile: targetPath=%s", targetPath.c_str());
-                int fd = open(targetPath.c_str(), O_RDWR, 0644);
-                if ((fd == 0) || (errno == EEXIST))
-                {
-                    AI_LOG_INFO("Dynamic plugin: createRuntime: fd=%d", fd);                  
+                int fd = open(targetPath.c_str(), O_RDONLY|O_CREAT|O_EXCL, 0644);
+                AI_LOG_INFO("####DBG: Dynamic plugin: createRuntime: fd=%d", fd);
+                if ((fd > 0) || (errno == EEXIST))
+                {                  
                     close(fd);
                     success = true;
                 }
@@ -173,10 +173,10 @@ bool DynamicMountDetails::onCreateContainer() const
                     // Creating the file first ensures an inode exists for the
                     // bind mount to target.
                     AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: IsFile: targetPath=%s", targetPath.c_str());
-                    int fd = open(targetPath.c_str(), O_RDWR, 0644);
-                    if ((fd == 0) || (errno == EEXIST))
+                    int fd = open(targetPath.c_str(), O_RDONLY|O_CREAT|O_EXCL, 0644);
+                    AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: IsFile: fd=%d", fd);
+                    if ((fd > 0) || (errno == EEXIST))
                     {
-                        AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: IsFile: fd=%d", fd);
                         close(fd);
                         success = true;
                     }
@@ -217,7 +217,7 @@ bool DynamicMountDetails::onPostStop() const
     bool success = false;
     std::string targetPath = mRootfsPath + mMountProperties.destination;
     struct stat buffer;
-    AI_LOG_INFO("Dynamic plugin: onPostStop: targetPath=%s", targetPath.c_str());
+    AI_LOG_INFO("####DBG: Dynamic plugin: onPostStop: targetPath=%s", targetPath.c_str());
     if (stat(targetPath.c_str(), &buffer) == 0)
     {
         if (remove(targetPath.c_str()) == 0)
