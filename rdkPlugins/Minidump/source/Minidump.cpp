@@ -70,6 +70,7 @@ bool Minidump::preCreation()
 
     // creates file descriptor to a volatile file that lives in RAM
     int hostFd = AnonymousFile().create();
+    AI_LOG_INFO(:###DBG: preCreation hostFd=%d", hostFd);
     if (hostFd == -1)
     {
         AI_LOG_ERROR_EXIT("failed to create anonymous file in a host namespace");
@@ -108,7 +109,9 @@ bool Minidump::postHalt()
 
     // gets file descriptor established at preCreateHook
     auto fileFds = mUtils->files(mName);
+    AI_LOG_INFO(:###DBG: fileFds=%zu", fileFds);  
     const auto count = fileFds.size();
+    AI_LOG_INFO(:###DBG: count=%zu", count);
     if (count != 1)
     {
         AI_LOG_ERROR_EXIT("Incorrect number of fds passed to container namespace: %zu", count);
@@ -116,6 +119,7 @@ bool Minidump::postHalt()
     }
 
     int hostFd = fileFds.front();
+    AI_LOG_INFO(:###DBG: hostFd=%d", hostFd);
     std::string destFile = getDestinationFile();
 
     // copies content of volatile file from RAM to a disk
