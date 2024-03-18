@@ -62,7 +62,7 @@ bool DynamicMountDetails::onCreateRuntime() const
     struct stat buffer;
     if (stat(mMountProperties.source.c_str(), &buffer) == 0)
     {
-        AI_LOG_INFO("####DBG: Dynamic plugin: onCreateRuntime: sourcePath=%s present", source.c_str());
+        AI_LOG_INFO("####DBG: Dynamic plugin: onCreateRuntime: sourcePath=%s present", mMountProperties.source.c_str());
         bool isDir = S_ISDIR(buffer.st_mode);
         // Determine path based on whether source is a directory or file
         if (isDir)
@@ -138,7 +138,7 @@ bool DynamicMountDetails::onCreateContainer() const
     struct stat buffer;
     if (stat(mMountProperties.source.c_str(), &buffer) == 0)
     {
-      AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: sourcePath=%s present", source.c_str());
+      AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: sourcePath=%s present", mMountProperties.source.c_str());
         bool isDir = S_ISDIR(buffer.st_mode);
         if (stat(targetPath.c_str(), &buffer) != 0)
         {
