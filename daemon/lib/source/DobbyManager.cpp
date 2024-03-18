@@ -2810,8 +2810,8 @@ void DobbyManager::runcMonitorThread()
 
     // don't know if this is needed, but doesn't hurt and is part of the
     // belt and braces approach to signals
-    sigprocmask(SIG_BLOCK, &mask, nullptr);
-    pthread_sigmask(SIG_BLOCK, &mask, nullptr);
+    sigprocmask(SIG_UNBLOCK, &mask, nullptr);
+    pthread_sigmask(SIG_UNBLOCK, &mask, nullptr);
 
     sem_post(&mRuncMonitorThreadStartedSem);
     while (!mRuncMonitorTerminate)
