@@ -140,8 +140,6 @@ bool DynamicMountDetails::onCreateContainer() const
     {
       AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: sourcePath=%s present", mMountProperties.source.c_str());
         bool isDir = S_ISDIR(buffer.st_mode);
-        if (stat(targetPath.c_str(), &buffer) != 0)
-        {
             AI_LOG_INFO("####DBG: Dynamic plugin: onCreateContainer: targetPath=%s not present", targetPath.c_str());
             std::string dirPath; 
             // Determine path based on whether target is a directory or file
@@ -190,7 +188,7 @@ bool DynamicMountDetails::onCreateContainer() const
             {
                 AI_LOG_SYS_ERROR(errno, "failed to create mount destination path '%s' in storage plugin", targetPath.c_str());
             }
-        }
+        
         success = addMount();
     }
     else
