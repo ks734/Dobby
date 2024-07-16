@@ -87,6 +87,7 @@ bool MulticastForwarder::set(const std::shared_ptr<Netfilter> &netfilter,
     {
         const std::string address = pluginData->multicast_forwarding[i]->ip;
         const uint16_t port = pluginData->multicast_forwarding[i]->port;
+        AI_LOG_WARN("#DBG : Multicast forwarding address : %s , port : %d", address.c_str(), port);
 
         // check ip address family type
         const int addrFamily = checkAddressFamily(address);
