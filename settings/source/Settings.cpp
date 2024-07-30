@@ -1022,7 +1022,7 @@ bool Settings::processMountObject(const Json::Value& value, ExtraMount* mount) c
     static const std::set<std::string> mountFlags =
         {
             "rbind", "bind", "silent", "ro", "sync", "nosuid", "dirsync",
-            "nodiratime", "relatime", "noexec", "nodev", "noatime", "strictatime"
+            "nodiratime", "relatime", "noexec", "nodev", "noatime", "strictatime", "rw"
         };
 
     // convert the mount flags
