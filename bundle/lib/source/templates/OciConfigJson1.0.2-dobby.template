@@ -347,10 +347,7 @@ static const char* ociJsonTemplate = R"JSON(
         "namespaces": [
             {
                 "type": "pid"
-            },{{#NETNS_ENABLED}}
-            {
-                "type": "network"
-            },{{/NETNS_ENABLED}}
+            },
             {
                 "type": "ipc"
             },
