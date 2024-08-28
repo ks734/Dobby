@@ -38,8 +38,8 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - run: pip install jsonref
-               pip install coverage
+      - run: pip install -r jsonref
+               pip install -r coverage
 
       - name: Set up CMake
         uses: jwlawson/actions-setup-cmake@v1.14
