@@ -60,7 +60,7 @@ unsigned OOMCrash::hookHints() const
 /**
  *  * @brief Dobby Hook - run in host namespace *once* when container bundle is downloaded
  *   */
-bool OOMCrash::CreateRuntime()
+bool OOMCrash::createRuntime()
 {
     if (!mContainerConfig)
     {
