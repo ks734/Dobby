@@ -80,7 +80,7 @@ bool OOMCrash::createRuntime()
     // Convert pid_t to string
     snprintf(pid_str, sizeof(pid_str), "%d", containerPid);
 	
-    char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
     if (!mUtils->mkdirRecursive(mRootfsPath + path.c_str(), 0777) && errno != EEXIST)
     {
         AI_LOG_ERROR("failed to create directory '%s' (%d - %s)", (mRootfsPath + path).c_str(), errno, strerror(errno));
@@ -95,7 +95,7 @@ bool OOMCrash::createRuntime()
         "mount", 
         "-t", "debugfs", 
         "debugfs", 
-        path, 
+        path.c_str(), 
         NULL
     };
 
