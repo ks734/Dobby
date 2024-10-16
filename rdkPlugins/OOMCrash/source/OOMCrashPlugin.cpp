@@ -76,11 +76,11 @@ bool OOMCrash::createRuntime()
         return false;
     }
     AI_LOG_INFO("###DBG : Container PID = %d", containerPid);
-    const char pid_str[10];
+    char pid_str[10];
     // Convert pid_t to string
     snprintf(pid_str, sizeof(pid_str), "%d", containerPid);
 	
-    const char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
     if (!mUtils->mkdirRecursive(mRootfsPath + path.c_str(), 0777) && errno != EEXIST)
     {
         AI_LOG_ERROR("failed to create directory '%s' (%d - %s)", (mRootfsPath + path).c_str(), errno, strerror(errno));
@@ -88,7 +88,7 @@ bool OOMCrash::createRuntime()
     }
     AI_LOG_INFO("###DBG : path = %s", (mRootfsPath + path).c_str());
 
-    const char *command[] = {
+    char *command[] = {
         "nsenter", 
         "-t", pid_str, 
         "-m", 
@@ -110,7 +110,7 @@ bool OOMCrash::createRuntime()
         // Child process
         execvp(command[0], command);
         // If execvp returns, it must have failed
-        LOG_ERR("failed exec '%s' (%d - %s)", command[0], errno, strerror(errno));
+        AI_LOG_ERROR_EXIT("failed exec '%s' (%d - %s)", command[0], errno, strerror(errno));
         return false;
     } else {
         // Parent process
@@ -148,12 +148,12 @@ bool OOMCrash::postHalt()
     }
     
     struct stat buffer;
-    const char *targetPath = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    std::string targetPath = mContainerConfig->rdk_plugins->oomcrash->data->path;
     AI_LOG_INFO("###DBG : target path = %s", (mRootfsPath + targetPath).c_str());
     
-    if (stat(mRootfsPath + targetPath.c_str(), &buffer) == 0)
+    if (stat((mRootfsPath + targetPath).c_str(), &buffer) == 0)
     {
-        if (umount(mRootfsPath + targetPath.c_str()) == 0)
+        if (umount((mRootfsPath + targetPath).c_str()) == 0)
             AI_LOG_INFO("###DBG : Successfully unmounted");
     }
 	
