@@ -76,11 +76,11 @@ bool OOMCrash::createRuntime()
         return false;
     }
     AI_LOG_INFO("###DBG : Container PID = %d", containerPid);
-    char pid_str[10];
+    const char pid_str[10];
     // Convert pid_t to string
     snprintf(pid_str, sizeof(pid_str), "%d", containerPid);
 	
-    std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    const char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
     if (!mUtils->mkdirRecursive(mRootfsPath + path.c_str(), 0777) && errno != EEXIST)
     {
         AI_LOG_ERROR("failed to create directory '%s' (%d - %s)", (mRootfsPath + path).c_str(), errno, strerror(errno));
@@ -88,14 +88,14 @@ bool OOMCrash::createRuntime()
     }
     AI_LOG_INFO("###DBG : path = %s", (mRootfsPath + path).c_str());
 
-    char *command[] = {
+    const char *command[] = {
         "nsenter", 
         "-t", pid_str, 
         "-m", 
         "mount", 
         "-t", "debugfs", 
         "debugfs", 
-        path.c_str(), 
+        path, 
         NULL
     };
 
@@ -108,7 +108,7 @@ bool OOMCrash::createRuntime()
 
     if (pid_fork == 0) {
         // Child process
-        execvp(command[0], command);
+        execvp(command[0], const_cast<char *const *>(command));
         // If execvp returns, it must have failed
         AI_LOG_ERROR_EXIT("failed exec '%s' (%d - %s)", command[0], errno, strerror(errno));
         return false;
