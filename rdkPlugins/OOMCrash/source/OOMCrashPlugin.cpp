@@ -76,11 +76,11 @@ bool OOMCrash::createRuntime()
         return false;
     }
     AI_LOG_INFO("###DBG : Container PID = %d", containerPid);
-    char pid_str[10];
+    const char pid_str[10];
     // Convert pid_t to string
     snprintf(pid_str, sizeof(pid_str), "%d", containerPid);
 	
-    char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    const char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
     if (!mUtils->mkdirRecursive(mRootfsPath + path.c_str(), 0777) && errno != EEXIST)
     {
         AI_LOG_ERROR("failed to create directory '%s' (%d - %s)", (mRootfsPath + path).c_str(), errno, strerror(errno));
@@ -88,7 +88,7 @@ bool OOMCrash::createRuntime()
     }
     AI_LOG_INFO("###DBG : path = %s", (mRootfsPath + path).c_str());
 
-    char *command[] = {
+    const char *command[] = {
         "nsenter", 
         "-t", pid_str, 
         "-m", 
@@ -99,7 +99,7 @@ bool OOMCrash::createRuntime()
         NULL
     };
 
-    AI_LOG_INFO("###DBG : command = %s", command);
+    AI_LOG_INFO("###DBG : command = %s", command[0]);
     pid_t pid_fork = fork();
     if (pid_fork < 0) {
         fprintf(stderr, "Error: fork failed (%d - %s)\n", errno, strerror(errno));
@@ -129,7 +129,7 @@ bool OOMCrash::createRuntime()
     }
 
 //Chmod 777 
-    if (chmod("/sys/kernel/debug/tracing/", 0777) == -1) {
+    if (chmod("/sys/kernel/debug/tracing/", 0777) == -1)
         AI_LOG_ERROR("Error changing permissions");
     else
 	AI_LOG_INFO("###DBG : Successfully changed permissions");
@@ -148,8 +148,8 @@ bool OOMCrash::postHalt()
     }
     
     struct stat buffer;
-    const char *targetpath = mContainerConfig->rdk_plugins->oomcrash->data->path;
-    AI_LOG_INFO("###DBG : target path = %s", (mRootfsPath + targetpath).c_str());
+    const char *targetPath = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    AI_LOG_INFO("###DBG : target path = %s", (mRootfsPath + targetPath).c_str());
     
     if (stat(mRootfsPath + targetPath.c_str(), &buffer) == 0)
     {
