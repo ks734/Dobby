@@ -76,7 +76,7 @@ bool OOMCrash::createRuntime()
         return false;
     }
     AI_LOG_INFO("###DBG : Container PID = %d", containerPid);
-    const char pid_str[10];
+    char pid_str[10];
     // Convert pid_t to string
     snprintf(pid_str, sizeof(pid_str), "%d", containerPid);
 	
