@@ -53,14 +53,14 @@ OOMCrash::OOMCrash(std::shared_ptr<rt_dobby_schema> &containerConfig,
 unsigned OOMCrash::hookHints() const
 {
     return (
-        IDobbyRdkPlugin::HintFlags::PostInstallationFlag |
+        IDobbyRdkPlugin::HintFlags::CreateRuntimeFlag |
 	IDobbyRdkPlugin::HintFlags::PostHaltFlag);
 }
 
 /**
  *  * @brief Dobby Hook - run in host namespace *once* when container bundle is downloaded
  *   */
-bool OOMCrash::postInstallation()
+bool OOMCrash::createRuntime()
 {
     if (!mContainerConfig)
     {
@@ -68,25 +68,71 @@ bool OOMCrash::postInstallation()
         return false;
     }
 
-    const std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
-    if (!mUtils->mkdirRecursive(mRootfsPath + path.c_str(), 0755) && errno != EEXIST)
+    // get the container pid
+    pid_t containerPid = mUtils->getContainerPid();
+    if (!containerPid)
+    {
+        AI_LOG_ERROR_EXIT("couldn't find container pid");
+        return false;
+    }
+    AI_LOG_INFO("###DBG : Container PID = %d", containerPid);
+    char pid_str[10];
+    // Convert pid_t to string
+    snprintf(pid_str, sizeof(pid_str), "%d", containerPid);
+	
+    const char *path = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    if (!mUtils->mkdirRecursive(mRootfsPath + std::string(path), 0777) && errno != EEXIST)
     {
         AI_LOG_ERROR("failed to create directory '%s' (%d - %s)", (mRootfsPath + path).c_str(), errno, strerror(errno));
         return false;
     }
+    AI_LOG_INFO("###DBG : path = %s", (mRootfsPath + path).c_str());
 
-    if (!mUtils->mkdirRecursive(path.c_str(), 0755) && errno != EEXIST)
-    {
-        AI_LOG_ERROR("failed to create directory '%s' (%d - %s)", path.c_str(), errno, strerror(errno));
-        return false;
+    const char *command[] = {
+        "nsenter", 
+        "-t", pid_str, 
+        "-m", 
+        "mount", 
+        "-t", "debugfs", 
+        "debugfs", 
+        path, 
+        NULL
+    };
+
+    AI_LOG_INFO("###DBG : command = %s", command[0]);
+    pid_t pid_fork = fork();
+    if (pid_fork < 0) {
+        fprintf(stderr, "Error: fork failed (%d - %s)\n", errno, strerror(errno));
+        exit(EXIT_FAILURE);
     }
 
-    if (!mUtils->addMount(path, path, "bind", {"bind", "ro", "nodev","nosuid", "noexec" }))
-    {
-        AI_LOG_WARN("failed to add mount %s", path.c_str());
+    if (pid_fork == 0) {
+        // Child process
+        execvp(command[0], const_cast<char *const *>(command));
+        // If execvp returns, it must have failed
+        AI_LOG_ERROR_EXIT("failed exec '%s' (%d - %s)", command[0], errno, strerror(errno));
         return false;
+    } else {
+        // Parent process
+        int status;
+        waitpid(pid_fork, &status, 0);
+        if (WIFEXITED(status)) {
+            int exit_status = WEXITSTATUS(status);
+            if (exit_status == 0) {
+                AI_LOG_INFO("###DBG : Successfully executed nsenter");
+            } else {
+                AI_LOG_ERROR_EXIT("nsenter command failed, exit status: %d", exit_status);
+            }
+        } else {
+            AI_LOG_ERROR_EXIT("Child process did not terminate normally");
+        }
     }
-    AI_LOG_INFO("OOMCrash postInstallation hook is running for container with hostname %s", mUtils->getContainerId().c_str());
+
+//Chmod 777 
+    if (chmod("/sys/kernel/debug/tracing/", 0777) == -1)
+        AI_LOG_ERROR("Error changing permissions");
+    else
+	AI_LOG_INFO("###DBG : Successfully changed permissions");
     return true;
 }
 
@@ -101,28 +147,17 @@ bool OOMCrash::postHalt()
         return false;
     }
     
-    bool oomDetected = false;
-    if (mUtils->exitStatus != 0)
-        oomDetected = checkForOOM();
-
-    if (oomDetected == true)
-        createFileForOOM();
+    struct stat buffer;
+    std::string targetPath = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    AI_LOG_INFO("###DBG : target path = %s", (mRootfsPath + targetPath).c_str());
     
-    // Remove the crashFile if container exits normally or if no OOM detected
-    if (mUtils->exitStatus == 0 || oomDetected == false)
+    if (stat((mRootfsPath + targetPath).c_str(), &buffer) == 0)
     {
-        struct stat buffer;
-        std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
-        std::string crashFile = path + "/oom_crashed_" + mUtils->getContainerId() + ".txt";
-
-        if (stat(crashFile.c_str(), &buffer) == 0)
-        {
-            remove(crashFile.c_str());
-            AI_LOG_INFO("%s file removed", crashFile.c_str());
-        }
+        if (umount((mRootfsPath + targetPath).c_str()) == 0)
+            AI_LOG_INFO("###DBG : Successfully unmounted");
     }
-    
-    AI_LOG_INFO("OOMCrash postHalt hook is running for container with hostname %s", mUtils->getContainerId().c_str());
+	
+    AI_LOG_FN_EXIT();
     return true;
 }
 
@@ -148,99 +183,4 @@ std::vector<std::string> OOMCrash::getDependencies() const
     }
 
     return dependencies;
-}
-
-/**
- * @brief Read cgroup file.
- *
- *  @param[out]  val      gives the number of times that the cgroup limit was exceeded.
- *
- * @return true on successfully reading from the file.
- */
-
-bool OOMCrash::readCgroup(unsigned long *val)
-{
-    std::string path = "/sys/fs/cgroup/memory/" + mUtils->getContainerId() + "/memory.failcnt";
-
-    FILE *fp = fopen(path.c_str(), "r");
-    if (!fp)
-    {
-        if (errno != ENOENT)
-            AI_LOG_ERROR("failed to open '%s' (%d - %s)", path.c_str(), errno, strerror(errno));
-
-        return false;
-    }
-
-    char* line = nullptr;
-    size_t len = 0;
-    ssize_t rd;
-
-    if ((rd = getline(&line, &len, fp)) < 0)
-    {
-        if (line)
-            free(line);
-        fclose(fp);
-        AI_LOG_ERROR("failed to read cgroup file line (%d - %s)", errno, strerror(errno));
-        return false;
-    }
-
-    *val = strtoul(line, nullptr, 0);
-
-    fclose(fp);
-    free(line);
-
-    return true;
-}
-
-/**
- * @brief Check for Out of Memory by reading cgroup file.
- *
- * @return true if OOM detected.
- */
-
-bool OOMCrash::checkForOOM()
-{
-    unsigned long failCnt;
-    bool status;
-    if (readCgroup(&failCnt) && (failCnt > 0))
-    {
-        AI_LOG_WARN("memory allocation failure detected in %s container, likely OOM (failcnt = %lu)", mUtils->getContainerId().c_str(), failCnt);
-        status = true; 
-    }
-    else
-    {
-        AI_LOG_WARN("No OOM failure detected in %s container", mUtils->getContainerId().c_str());
-        status = false;
-    }
-    return status;
-}
-
-/**
- * @brief Create OOM crash file named oom_crashed_<container_name>.txt on the configured path.
- *
- */
-
-void OOMCrash::createFileForOOM()
-{
-    std::string memoryExceedFile;
-    std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
-    
-    struct stat buffer;
-    if (stat(path.c_str(), &buffer)==0)
-    {
-        memoryExceedFile = path + "/oom_crashed_" + mUtils->getContainerId() + ".txt";
-        FILE *fp = fopen(memoryExceedFile.c_str(), "w+");
-        if (!fp)
-        {
-            if (errno != ENOENT)
-                AI_LOG_ERROR("failed to open '%s' (%d - %s)", path.c_str(), errno, strerror(errno));
-        }
-        AI_LOG_INFO("%s file created",memoryExceedFile.c_str());
-        fclose(fp);
-    }
-    else
-    {
-        if (errno == ENOENT)
-            AI_LOG_ERROR("Path '%s' does not exist (%d - %s)", path.c_str(), errno, strerror(errno));
-    }
 }
