@@ -26,6 +26,9 @@
 #include <RdkPluginBase.h>
 
 #include <sys/stat.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /**
  * @brief Dobby RDK OOMCrash Plugin
@@ -49,17 +52,15 @@ public:
     unsigned hookHints() const override;
 
 public:
-    bool postInstallation() override;
+    bool createRuntime() override;
     bool postHalt() override;
 
 public:
     std::vector<std::string> getDependencies() const override;
 
 private:
-    bool readCgroup(unsigned long *val);
-    bool checkForOOM();
-    void createFileForOOM();
-    
+    void executeCommand(const char* command, const char* args[]);
+
     const std::string mName;
     std::shared_ptr<rt_dobby_schema> mContainerConfig;
     const std::string mRootfsPath;
