@@ -160,7 +160,7 @@ void executeCommand(const char* command, const char* args[])
 
     if (pid_fork == 0) {
         // Child process
-        execvp(command, args);
+        execvp(command, const_cast<char *const *>(args));
         // If execvp returns, it must have failed
         AI_LOG_ERROR_EXIT("failed exec '%s' (%d - %s)", command, errno, strerror(errno));
         exit(EXIT_FAILURE);
