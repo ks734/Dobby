@@ -148,7 +148,7 @@ bool NetworkingPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("invalid config file");
         return false;
     }
-
+  
     // nothing to do for containers configured for an open network
     if (mNetworkType == NetworkType::Open)
     {
@@ -156,6 +156,7 @@ bool NetworkingPlugin::createRuntime()
         return true;
     }
 
+  AI_LOG_INFO("###DBG: Before GetAvailableExternalInterfaces");
     // get available external interfaces
     const std::vector<std::string> extIfaces = GetAvailableExternalInterfaces();
     if (extIfaces.empty())
@@ -163,11 +164,11 @@ bool NetworkingPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("No network interfaces available");
         return false;
     }
-
+  AI_LOG_INFO("###DBG: After GetAvailableExternalInterfaces");
     // check if another container has already initialised the bridge device for us
     std::shared_ptr<Netlink> netlink = std::make_shared<Netlink>();
     bool bridgeExists = netlink->ifaceExists(std::string(BRIDGE_NAME));
-
+  AI_LOG_INFO("###DBG: After ifaceExists");
     if (!bridgeExists)
     {
         AI_LOG_DEBUG("Dobby network bridge not found, setting it up");
@@ -179,6 +180,7 @@ bool NetworkingPlugin::createRuntime()
             return false;
         }
     }
+  AI_LOG_INFO("###DBG: After setupBridgeDevice");
 
     // setup veth, ip address and iptables rules for container
     if (!NetworkSetup::setupVeth(mUtils, mNetfilter, mHelper, mRootfsPath, mUtils->getContainerId(), mNetworkType))
@@ -186,6 +188,7 @@ bool NetworkingPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("failed to setup virtual ethernet device");
         return false;
     }
+  AI_LOG_INFO("###DBG: After setupVeth");
 
     // setup dnsmasq rules if enabled
     if (mNetworkType != NetworkType::None && mPluginData->dnsmasq)
@@ -197,6 +200,7 @@ bool NetworkingPlugin::createRuntime()
             return false;
         }
     }
+  AI_LOG_INFO("###DBG: After dnsmasq setup");
 
     // add port forwards if any have been configured
     if (mPluginData->port_forwarding != nullptr)
@@ -206,6 +210,7 @@ bool NetworkingPlugin::createRuntime()
             AI_LOG_ERROR_EXIT("failed to add port forwards");
             return false;
         }
+  AI_LOG_INFO("###DBG: After add port forwards");
 
         // Add localhost masquerade if enabled (run in container network namespace)
         if (mPluginData->port_forwarding->localhost_masquerade_present && mPluginData->port_forwarding->localhost_masquerade)
@@ -222,6 +227,7 @@ bool NetworkingPlugin::createRuntime()
                 return false;
             }
         }
+  AI_LOG_INFO("###DBG: After add localhost masquerade iptables rules inside container");
     }
 
     // enable multicast forwarding
@@ -233,6 +239,7 @@ bool NetworkingPlugin::createRuntime()
             return false;
         }
     }
+  AI_LOG_INFO("###DBG: After add multicast forwards");
 
     // apply iptables changes
     if (!mNetfilter->applyRules(AF_INET) || !mNetfilter->applyRules(AF_INET6))
@@ -240,6 +247,7 @@ bool NetworkingPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("failed to apply iptables rules");
         return false;
     }
+  AI_LOG_INFO("###DBG: After apply iptables rules");
 
     AI_LOG_FN_EXIT();
     return true;
