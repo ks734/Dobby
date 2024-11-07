@@ -717,7 +717,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                              const NetworkType networkType)
 {
     AI_LOG_FN_ENTRY();
-
+AI_LOG_INFO("###DBG: Before create netlink object");
     // step 1 - create a new netlink object
     std::shared_ptr<Netlink> netlink = std::make_shared<Netlink>();
     if (!netlink->isValid())
@@ -725,7 +725,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         AI_LOG_ERROR_EXIT("failed to create netlink object");
         return false;
     }
-
+AI_LOG_INFO("###DBG: After create netlink object");
     // step 2 - get container process pid
     pid_t containerPid = utils->getContainerPid();
     if (!containerPid)
@@ -733,11 +733,12 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         AI_LOG_ERROR_EXIT("couldn't find container pid");
         return false;
     }
-
+AI_LOG_INFO("###DBG: After getContainerPid");
     // step 3 - create a veth pair for the container, using the name of the
     // first external interface defined in Dobby settings
     std::vector<std::string> takenVeths;
     utils->getTakenVeths(takenVeths);
+AI_LOG_INFO("###DBG: After getTakenVeths");
 
     std::string vethName = netlink->createVeth(PEER_NAME, containerPid, takenVeths);
     if (vethName.empty())
@@ -746,6 +747,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                           containerId.c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After createVeth");
 
     // step 4 - get and save the ip address for container
     if (!saveContainerAddress(utils, helper, rootfsPath, vethName))
@@ -754,6 +756,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                           containerId.c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After saveContainerAddress");
 
     // step 5 - enable ip forwarding on the veth interface created outside
     // the container
@@ -763,6 +766,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                           vethName.c_str(), containerId.c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After setIfaceForwarding");
 
     // step 6 - attach the veth iface on the outside of the container to the
     // bridge interface
@@ -772,6 +776,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                           containerId.c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After addIfaceToBridge");
 
     // step 7 - enable IPv6 forwarding on veth interface if using IPv6
     if (helper->ipv6())
@@ -783,6 +788,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                               vethName.c_str(), containerId.c_str());
             return false;
         }
+AI_LOG_INFO("###DBG: After enable IPv6 forwarding");
 
         // accept router advertisements even with forwarding enabled
         if (!netlink->setIfaceAcceptRa(utils, vethName, 2))
@@ -792,6 +798,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
             return false;
         }
     }
+AI_LOG_INFO("###DBG: After setIfaceAcceptRa");
 
     // step 8 - enter the network namespace of the container and set the
     // default routes
@@ -802,6 +809,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
                           containerId.c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After setup routing for container");
 
     // step 9 - add routing table entry to the container
     // This shouldn't be needed as there is already existing rule for the
@@ -818,6 +826,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
             return false;
         }
     }
+
     if (helper->ipv6())
     {
         if (!netlink->addRoute(BRIDGE_NAME, helper->ipv6Addr(), 128, IN6ADDR_ANY))
@@ -834,6 +843,7 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         AI_LOG_ERROR_EXIT("failed to bring up veth interface");
         return false;
     }
+    AI_LOG_INFO("###DBG: After bringing up veth interface");
 
     Netfilter::Operation operation = Netfilter::Operation::Append;
 
@@ -847,18 +857,20 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         {
             ipv4RuleSet = createAntiSpoofRule(vethName, helper->ipv4AddrStr(), AF_INET);
             operation = Netfilter::Operation::Append;
+            AI_LOG_INFO("###DBG: After ipv4 createAntiSpoofRule");
         }
         else if (networkType == NetworkType::None)
         {
             ipv4RuleSet = createDropAllRule(vethName);
             operation = Netfilter::Operation::Insert;
         }
-
+        AI_LOG_INFO("###DBG: Before ipv4 addRules");
         if (!netfilter->addRules(ipv4RuleSet, AF_INET, operation))
         {
             AI_LOG_ERROR_EXIT("failed to add iptables rule to drop veth packets");
             return false;
         }
+        AI_LOG_INFO("###DBG: After ipv4 addRules");
     }
     if (helper->ipv6())
     {
@@ -867,18 +879,20 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         {
             ipv6RuleSet = createAntiSpoofRule(vethName, helper->ipv6AddrStr(), AF_INET6);
             operation = Netfilter::Operation::Append;
+            AI_LOG_INFO("###DBG: After ipv6 createAntiSpoofRule");
         }
         else if (networkType == NetworkType::None)
         {
             ipv6RuleSet = createDropAllRule(vethName);
             operation = Netfilter::Operation::Insert;
         }
-
+        AI_LOG_INFO("###DBG: Before ipv4 addRules");
         if (!netfilter->addRules(ipv6RuleSet, AF_INET6, operation))
         {
             AI_LOG_ERROR_EXIT("failed to add iptables rule to drop veth packets");
             return false;
         }
+        AI_LOG_INFO("###DBG: After ipv6 addRules");
     }
 
     AI_LOG_FN_EXIT();
