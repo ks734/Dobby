@@ -591,7 +591,7 @@ bool setupContainerNet(const std::shared_ptr<NetworkingHelper> &helper)
         AI_LOG_ERROR_EXIT("failed to create netlink object inside the container");
         return false;
     }
-
+    AI_LOG_INFO("###DBG: Inside setupContainerNet: After create netlink object");
     // step 2 - set the address of the ifaceName interface inside the container
 
     // first add IPv4 address if enabled
@@ -625,14 +625,14 @@ bool setupContainerNet(const std::shared_ptr<NetworkingHelper> &helper)
         AI_LOG_ERROR_EXIT("failed to set the address and netmask of 'lo'");
         return false;
     }
-
+AI_LOG_INFO("###DBG: Inside setupContainerNet: After setting link address");
     // step 4 - bring both interfaces up
     if (!netlink->ifaceUp(ifaceName) || !netlink->ifaceUp(loName))
     {
         AI_LOG_ERROR_EXIT("failed to bring up container interfaces");
         return false;
     }
-
+AI_LOG_INFO("###DBG: Inside setupContainerNet: After bringing up container interfaces");
     // step 5 - and the final step is to set the route table(s) for the container
     if (helper->ipv4())
     {
@@ -657,7 +657,7 @@ bool setupContainerNet(const std::shared_ptr<NetworkingHelper> &helper)
             }
         }
     }
-
+AI_LOG_INFO("###DBG: Inside setupContainerNet: After applying ipv4 route");
     if (helper->ipv6())
     {
         //construct lo address (::1)
@@ -684,7 +684,7 @@ bool setupContainerNet(const std::shared_ptr<NetworkingHelper> &helper)
             }
         }
     }
-
+AI_LOG_INFO("###DBG: Inside setupContainerNet: After applying ipv6 route");
     AI_LOG_FN_EXIT();
     return true;
 }
