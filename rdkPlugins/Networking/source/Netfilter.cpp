@@ -434,9 +434,9 @@ void Netfilter::trimDuplicates(RuleSet &existing, RuleSet &newRuleSet, Operation
 bool Netfilter::checkDuplicates(RuleSets ruleCache, const int ipVersion) const
 {
     AI_LOG_FN_ENTRY();
-
     // get the existing iptables rules
     RuleSet existing = getRuleSet(ipVersion);
+AI_LOG_INFO("###DBG: After getRuleSet");
 
     if (existing.size() == 0)
     {
@@ -446,9 +446,13 @@ bool Netfilter::checkDuplicates(RuleSets ruleCache, const int ipVersion) const
 
     // trim duplicates rules from the rulesets we want to add to iptables
     trimDuplicates(existing, ruleCache.appendRuleSet, Operation::Append);
+    AI_LOG_INFO("###DBG: After trimDuplicates append");
     trimDuplicates(existing, ruleCache.insertRuleSet, Operation::Insert);
+    AI_LOG_INFO("###DBG: After trimDuplicates Insert");
     trimDuplicates(existing, ruleCache.deleteRuleSet, Operation::Delete);
+    AI_LOG_INFO("###DBG: After trimDuplicates Delete");
     trimDuplicates(existing, ruleCache.unchangedRuleSet, Operation::Unchanged);
+    AI_LOG_INFO("###DBG: After trimDuplicates Unchanged");
 
     // check if we actually have any rules left to apply
     if (ruleCache.appendRuleSet.empty() && ruleCache.insertRuleSet.empty() &&
@@ -458,7 +462,6 @@ bool Netfilter::checkDuplicates(RuleSets ruleCache, const int ipVersion) const
         AI_LOG_FN_EXIT();
         return false;
     }
-
     AI_LOG_FN_EXIT();
     return true;
 }
@@ -487,7 +490,6 @@ bool Netfilter::applyRules(const int ipVersion)
 
     // we simply need to pipe the fixed iptables rules into iptables-restore
     // without flushing the existing rules
-
     // create a memfd for feeding the iptables-restore monster
     int rulesMemFd = memfd_create("iptables-restore-buf", MFD_CLOEXEC);
     if (rulesMemFd < 0)
@@ -495,7 +497,6 @@ bool Netfilter::applyRules(const int ipVersion)
         AI_LOG_SYS_ERROR_EXIT(errno, "failed to create memfd buffer");
         return false;
     }
-
     // and wrap in a ifstream object (nb: stdio_filebuf takes ownership of the
     // fd and will close it when done)
     __gnu_cxx::stdio_filebuf<char> rulesBuf(rulesMemFd, std::ios::out);
@@ -506,7 +507,7 @@ bool Netfilter::applyRules(const int ipVersion)
 
     // get reference to the correct cache
     RuleSets &ruleCache = (ipVersion == AF_INET) ? mIpv4RuleCache : mIpv6RuleCache;
-
+    AI_LOG_INFO("###DBG: Before checking duplicates");
     // before doing anything to the rules, check for duplicates in iptables and
     // remove the duplicates from our cache
     if (!checkDuplicates(ruleCache, ipVersion))
@@ -515,7 +516,7 @@ bool Netfilter::applyRules(const int ipVersion)
         AI_LOG_FN_EXIT();
         return true;
     }
-
+    AI_LOG_INFO("###DBG: After checking duplicates");
     // fill the pipe with the iptables rules
     const TableType tableTypes[] = { TableType::Raw,     TableType::Nat,
                                      TableType::Mangle,  TableType::Filter,
@@ -596,7 +597,6 @@ bool Netfilter::applyRules(const int ipVersion)
                 rulesStream << '\n';
             }
         }
-
         // finish each table with a 'COMMIT'
         rulesStream << "COMMIT\n";
         if (rulesStream.bad() || rulesStream.fail())
@@ -606,7 +606,7 @@ bool Netfilter::applyRules(const int ipVersion)
             break;
         }
     }
-
+    
     // exec the iptables-restore function, passing in the pipe for stdin
     if (success)
     {
@@ -637,7 +637,6 @@ bool Netfilter::applyRules(const int ipVersion)
 
         // ensure all rules flushed to the memfd
         rulesStream.flush();
-
         // seek back to the beginning of the memfd
         int rulesFd = rulesBuf.fd();
         if (lseek(rulesFd, 0, SEEK_SET) < 0)
@@ -660,7 +659,7 @@ bool Netfilter::applyRules(const int ipVersion)
             AI_LOG_ERROR_EXIT("netfilter only supports AF_INET or AF_INET6");
             return false;
         }
-
+        AI_LOG_INFO("###DBG: After forkExec");
     }
 
     AI_LOG_FN_EXIT();
