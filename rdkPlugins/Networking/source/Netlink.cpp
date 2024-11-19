@@ -1368,7 +1368,7 @@ std::string Netlink::createVeth(const std::string& peerVethName,
         AI_LOG_ERROR_EXIT("invalid peer veth name");
         return std::string();
     }
-
+AI_LOG_INFO("###DBG: Inside createVeth: After peer veth name check");
     std::lock_guard<std::mutex> locker(mLock);
 
     if (mSocket == nullptr)
@@ -1447,7 +1447,7 @@ std::string Netlink::createVeth(const std::string& peerVethName,
             vethName.clear();
             break;
         }
-
+AI_LOG_INFO("###DBG: Inside createVeth: After finding a free veth device");
 #if (AI_BUILD_TYPE == AI_DEBUG)
         // get the newly created veth link and ensure it is actually a veth type
         NlLink veth(mSocket, vethName);
@@ -1456,6 +1456,7 @@ std::string Netlink::createVeth(const std::string& peerVethName,
             AI_LOG_ERROR("failed to get newly created veth link '%s'",
                          vethName.c_str());
         }
+        AI_LOG_INFO("###DBG: Inside createVeth: After getting the newly created veth link");
         if (!rtnl_link_is_veth(veth))
         {
             AI_LOG_ERROR("odd, apparently link '%s' is not a veth type",
