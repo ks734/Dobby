@@ -255,7 +255,7 @@ void DobbyRdkPluginUtils::nsThread(int newNsFd, int nsType, bool* success,
                                    std::function<bool()>& func) const
 {
     AI_LOG_FN_ENTRY();
-
+AI_LOG_INFO("###DBG: Inside nsthread: Before unshare");
     // unshare the specific namespace from the thread
     if (unshare(nsType) != 0)
     {
@@ -263,7 +263,7 @@ void DobbyRdkPluginUtils::nsThread(int newNsFd, int nsType, bool* success,
         *success = false;
         return;
     }
-
+AI_LOG_INFO("###DBG: Inside nsthread: After unshare");
     // switch into the new namespace
     if (setns(newNsFd, nsType) != 0)
     {
@@ -271,10 +271,10 @@ void DobbyRdkPluginUtils::nsThread(int newNsFd, int nsType, bool* success,
         *success = false;
         return;
     }
-
+AI_LOG_INFO("###DBG: Inside nsthread: After setns");
     // execute the caller's function
     *success = func();
-
+AI_LOG_INFO("###DBG: Inside nsthread: After function call");
     AI_LOG_FN_EXIT();
 }
 
