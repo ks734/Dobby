@@ -157,6 +157,7 @@ bool AppServicesRdkPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("failed to construct AS iptables rules for '%s''", mUtils->getContainerId().c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After constructRules");
 
     // add all rules to cache
     if (!mNetfilter->addRules(ruleSet, AF_INET, Netfilter::Operation::Insert))
@@ -164,6 +165,7 @@ bool AppServicesRdkPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("failed to setup AS iptables rules for '%s''", mUtils->getContainerId().c_str());
         return false;
     }
+AI_LOG_INFO("###DBG: After addRules");
 
     // actually apply the rules
     if (!mNetfilter->applyRules(AF_INET))
@@ -171,7 +173,7 @@ bool AppServicesRdkPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("Failed to apply AS iptables rules for '%s'", mUtils->getContainerId().c_str());
         return false;
     }
-
+AI_LOG_INFO("###DBG: After applyRules");
     // Add the localhost masquerade rules inside the container namespace
     // Ideally this would be done in the createContainer hook, but that fails
     // on Llama with permissions issues (works fine on VM...)
@@ -181,7 +183,7 @@ bool AppServicesRdkPlugin::createRuntime()
         AI_LOG_ERROR_EXIT("failed to construct AS iptables masquerade rules for '%s''", mUtils->getContainerId().c_str());
         return false;
     }
-
+AI_LOG_INFO("###DBG: After constructMasqueradeRules");
     const pid_t containerPid = mUtils->getContainerPid();
     if (!mUtils->callInNamespace(containerPid, CLONE_NEWNET,
                                 &AppServicesRdkPlugin::setupLocalhostMasquerade, this, masqueradeRuleSet))
@@ -204,14 +206,14 @@ bool AppServicesRdkPlugin::setupLocalhostMasquerade(Netfilter::RuleSet& ruleSet)
         AI_LOG_ERROR_EXIT("failed to setup AS localhost masquerade iptables rules inside container for '%s''", mUtils->getContainerId().c_str());
         return false;
     }
-
+AI_LOG_INFO("###DBG: After addRules");
     // actually apply the rules
     if (!nsNetfilter->applyRules(AF_INET))
     {
         AI_LOG_ERROR_EXIT("Failed to apply AS iptables rules for '%s'", mUtils->getContainerId().c_str());
         return false;
     }
-
+AI_LOG_INFO("###DBG: After applyRules");
     // Enable route_localnet inside the container
     const std::string routingFilename = "/proc/sys/net/ipv4/conf/eth0/route_localnet";
     mUtils->writeTextFile(routingFilename, "1", O_TRUNC | O_WRONLY, 0);
