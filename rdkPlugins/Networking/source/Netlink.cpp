@@ -1397,6 +1397,7 @@ AI_LOG_INFO("###DBG: Inside createVeth: After peer veth name check");
     {
         // get an available interface name for the veth
         vethName = getAvailableVethName(vethNameStartIndex);
+        AI_LOG_INFO("###DBG: Inside createVeth: After getAvailableVethName");
         if (vethName.empty())
         {
             AI_LOG_ERROR("no free veth%%d names available");
@@ -1426,6 +1427,8 @@ AI_LOG_INFO("###DBG: Inside createVeth: After peer veth name check");
         // create the veth pair
         int ret = rtnl_link_veth_add(mSocket, vethName.c_str(),
                                      peerVethName.c_str(), peerPid);
+        AI_LOG_INFO("###DBG: Inside createVeth: After rtnl_link_veth_add");
+
         if (ret == -NLE_EXIST)
         {
             AI_LOG_WARN("'%s' already exists, trying again to get free veth"
