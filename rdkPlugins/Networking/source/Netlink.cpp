@@ -560,7 +560,7 @@ bool Netlink::applyChangesToLink(const std::string& ifaceName,
     {
         return false;
     }
-
+AI_LOG_INFO("###DBG: Inside applyChangesToLink: Before rtnl_link_change");
     // apply the changes
     int ret = rtnl_link_change(mSocket, link, changes, 0);
     if (ret != 0)
@@ -568,7 +568,7 @@ bool Netlink::applyChangesToLink(const std::string& ifaceName,
         AI_LOG_NL_ERROR_EXIT(ret, "failed to apply changes");
         return false;
     }
-
+AI_LOG_INFO("###DBG: Inside applyChangesToLink: After rtnl_link_change");
     AI_LOG_FN_EXIT();
     return true;
 }
@@ -605,6 +605,7 @@ bool Netlink::setLinkAddress(const NlLink& link, const in_addr_t address,
 
     // set the link index
     rtnl_addr_set_link(addr, link);
+AI_LOG_INFO("###DBG: Inside setLinkAddress: After rtnl_addr_set_link");
 
     // add the address
     int ret = rtnl_addr_add(mSocket, addr, 0);
@@ -613,6 +614,7 @@ bool Netlink::setLinkAddress(const NlLink& link, const in_addr_t address,
         AI_LOG_NL_ERROR_EXIT(ret, "failed to add new link address");
         return false;
     }
+AI_LOG_INFO("###DBG: Inside setLinkAddress: After rtnl_addr_add");
 
     AI_LOG_FN_EXIT();
     return true;
@@ -650,6 +652,7 @@ bool Netlink::setLinkAddress(const NlLink& link, const struct in6_addr address,
 
     // set the link index
     rtnl_addr_set_link(addr, link);
+AI_LOG_INFO("###DBG: Inside setLinkAddress: After rtnl_addr_set_link");
 
     // add the address
     int ret = rtnl_addr_add(mSocket, addr, 0);
@@ -658,6 +661,7 @@ bool Netlink::setLinkAddress(const NlLink& link, const struct in6_addr address,
         AI_LOG_NL_ERROR_EXIT(ret, "failed to add new link address");
         return false;
     }
+AI_LOG_INFO("###DBG: Inside setLinkAddress: After rtnl_addr_add");
 
     AI_LOG_FN_EXIT();
     return true;
@@ -789,9 +793,11 @@ bool Netlink::setIfaceConfig(const std::string& ifaceName, const unsigned int co
         AI_LOG_NL_ERROR_EXIT(ret, "failed to set forwarding conf");
         return false;
     }
+AI_LOG_INFO("###DBG: Inside setIfaceConfig: After rtnl_link_inet_set_conf");
 
     // apply the changes
     bool success = applyChangesToLink(ifaceName, changes);
+AI_LOG_INFO("###DBG: Inside setIfaceConfig: After applyChangesToLink");
 
     AI_LOG_FN_EXIT();
     return success;
@@ -823,6 +829,7 @@ bool Netlink::setIfaceForwarding(const std::string& ifaceName, bool enable)
         AI_LOG_ERROR_EXIT("failed to get config id for 'forwarding'");
         return false;
     }
+AI_LOG_INFO("###DBG: Inside setIfaceForwarding: After rtnl_link_inet_str2devconf");
 
     return setIfaceConfig(ifaceName, devConf, enable ? 1 : 0);
 }
@@ -965,12 +972,13 @@ bool Netlink::ifaceUp(const std::string& ifaceName)
         AI_LOG_ERROR_EXIT("failed to create changes object");
         return false;
     }
-
     // set the link state to up
     rtnl_link_set_flags(changes, IFF_UP);
+AI_LOG_INFO("###DBG: Inside ifaceUp: After rtnl_link_set_flags");
 
     // apply the changes
     bool success = applyChangesToLink(ifaceName, changes);
+AI_LOG_INFO("###DBG: Inside ifaceUp: After applyChangesToLink");
 
     AI_LOG_FN_EXIT();
     return success;
