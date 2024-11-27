@@ -263,7 +263,7 @@ AI_LOG_INFO("###DBG[%d,%ld]: Inside nsthread: Before unshare", getpid(), syscall
         *success = false;
         return;
     }
-AI_LOG_INFO("###DBG[%d,%ld]: Inside nsthread: After unshare", getpid(), syscall(__NR_gettid)");
+AI_LOG_INFO("###DBG[%d,%ld]: Inside nsthread: After unshare", getpid(), syscall(__NR_gettid));
     // switch into the new namespace
     if (setns(newNsFd, nsType) != 0)
     {
@@ -271,7 +271,7 @@ AI_LOG_INFO("###DBG[%d,%ld]: Inside nsthread: After unshare", getpid(), syscall(
         *success = false;
         return;
     }
-AI_LOG_INFO("###DBG[%d,%ld]: Inside nsthread: After setns", getpid(), syscall(__NR_gettid)");
+AI_LOG_INFO("###DBG[%d,%ld]: Inside nsthread: After setns", getpid(), syscall(__NR_gettid));
     // execute the caller's function
     *success = func();
 AI_LOG_INFO("###DBG: Inside nsthread: After function call");
