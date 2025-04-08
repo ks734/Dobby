@@ -96,24 +96,27 @@ bool Storage::preCreation()
     }
 
 #ifndef USE_OPEN_TREE_FOR_DYNAMIC_MOUNTS
+    AI_LOG_WARN("###Dbg: Before mkdir mTempMountPointOutsideContainer");
     // Create host directory for the mount tunnel
     if (!DobbyRdkPluginUtils::mkdirRecursive(mTempMountPointOutsideContainer, 0755))
     {
         AI_LOG_WARN("failed to create dir '%s'", mTempMountPointOutsideContainer.c_str());
         return false;
     }
+    AI_LOG_WARN("###Dbg: After mkdir mTempMountPointOutsideContainer");
     // Create directory inside the container rootfs for the mount tunnel
     if (!DobbyRdkPluginUtils::mkdirRecursive(mMountPointInsideContainer, 0755))
     {
         AI_LOG_WARN("failed to create dir '%s'", mMountPointInsideContainer.c_str());
         return false;
     }
-
+    AI_LOG_WARN("###Dbg: After mkdir mTempMountPointInsideContainer");
     if(mount(mTempMountPointOutsideContainer.c_str(), mTempMountPointOutsideContainer.c_str(), NULL, MS_BIND, NULL) != 0)
     {
         AI_LOG_SYS_ERROR(errno, "failed to bind mount '%s'", mTempMountPointOutsideContainer.c_str());
         return false;
     }
+    AI_LOG_WARN("###Dbg: After mount");
 #endif
 
     AI_LOG_FN_EXIT();
