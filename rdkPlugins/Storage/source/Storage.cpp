@@ -297,6 +297,11 @@ bool Storage::postStop()
 
 #ifndef USE_OPEN_TREE_FOR_DYNAMIC_MOUNTS
     // cleanup for the mount tunnel
+    struct stat buffer;
+    if (stat(mTempMountPointOutsideContainer.c_str(), &buffer) == 0)
+        AI_LOG_WARN("###Dbg: mTempMountPointOutsideContainer: %s exists", mTempMountPointOutsideContainer.c_str());
+  
+    AI_LOG_WARN("###Dbg: Before umount2 mTempMountPointOutsideContainer");
     if (umount2(mTempMountPointOutsideContainer.c_str(), UMOUNT_NOFOLLOW) != 0)
     {
         AI_LOG_SYS_ERROR(errno, "failed to unmount '%s'",
@@ -314,6 +319,7 @@ bool Storage::postStop()
                          mTempMountPointOutsideContainer.c_str());
         }
     }
+    AI_LOG_WARN("###Dbg: After umount2 mTempMountPointOutsideContainer");
 #endif
 
     AI_LOG_FN_EXIT();
