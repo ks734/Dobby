@@ -792,7 +792,10 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
         AI_LOG_ERROR("/sys/kernel/security/apparmor/profiles open failed");
         return status;
     }
-
+    if (ferror(fp)) {
+        perror("Error reading file");
+    }
+    AI_LOG_WARN("###Dbg: Before fgets");
     while (fgets(line, sizeof(line), fp))
     {
         if (strstr(line, profile))
@@ -802,7 +805,7 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
             break;
         }
     }
-
+    AI_LOG_WARN("###Dbg: After fgets");
     fclose(fp);
     return status;
 }
