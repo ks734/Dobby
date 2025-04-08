@@ -795,7 +795,7 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
     if (ferror(fp)) {
         perror("Error reading file");
     }
-    AI_LOG_WARN("###Dbg: Before fgets");
+    AI_LOG_WARN("###Dbg: Before fgets %s", profile);
     while (fgets(line, sizeof(line), fp))
     {
         if (strstr(line, profile))
