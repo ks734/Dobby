@@ -787,9 +787,9 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
 
     if (fd < 0)
     {
-        AI_LOG_ERROR("/proc/self/attr/current open failed");
-        return status;
-    }
+        AI_LOG_ERROR("/proc/self/attr/current open failed");
+        return status;
+    }
     char profile_name[256];
     snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
 
