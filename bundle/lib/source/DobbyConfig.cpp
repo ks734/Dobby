@@ -780,76 +780,34 @@ bool DobbyConfig::updateBundleConfig(const ContainerId& id, std::shared_ptr<rt_d
  *  @return true if the apparmor profile was loaded in kernel space, otherwise false.
  */
 
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <stdbool.h>
-
-bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const {
-    bool status = false;
-    int fd = open("/proc/self/attr/current", O_WRONLY);
-    if (fd < 0) {
+bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
+{
+    bool status = false;
+    int fd = open("/proc/self/attr/current", O_WRONLY);
+    
+    if (fd < 0) 
+    {
         perror("open");
         return status;
     }
+    char profile_name[256];
+    snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
 
-    char profile_name[256];
-    snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
-
-    if (write(fd, profile_name, strlen(profile_name)) < 0) {
-        if (errno == ENOENT) {
-            AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
-        } else {
-            perror("write");
-        }
-    } else {
-        status = true;
-        AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
-    }
-
-    close(fd);
-    return status;
-}
-
-// -----------------------------------------------------------------------------
-/**
- *  @brief Set apparmor profile in config.
- *
- *  Checks if profile from config is loaded. If not uses default profile if it
- *  is loaded.
- *
- *  @param[in]  defaultProfileName  The name of the default apparmor profile.
- */
-void DobbyConfig::setApparmorProfile(const std::string& defaultProfileName)
-{
-    std::shared_ptr<rt_dobby_schema> cfg = config();
-    if (cfg == nullptr)
+    if (write(fd, profile_name, strlen(profile_name)) < 0) 
     {
-        AI_LOG_ERROR("Invalid bundle config");
-        return;
-    }
-
-    bool status = false;
-
-    if (cfg->process->apparmor_profile)
+        if (errno == ENOENT)
+            AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
+        else 
+            perror("write");
+    } 
+    else 
     {
-        status = isApparmorProfileLoaded(cfg->process->apparmor_profile);
+        status = true;
+        AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
     }
-
-    if (!status)
-    {
-        cfg->process->apparmor_profile = strdup(defaultProfileName.c_str());
-        status = isApparmorProfileLoaded(cfg->process->apparmor_profile);
-    }
-
-    if (!status)
-    {
-        cfg->process->apparmor_profile = nullptr;
-        AI_LOG_INFO("No apparmor profile is loaded");
-    }
+    
+    close(fd);
+    return status;
 }
 
 // -----------------------------------------------------------------------------
