@@ -784,8 +784,8 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
 {
     bool status = false;
     int fd = open("/proc/self/attr/current", O_WRONLY);
-    
-    if (fd < 0) 
+
+    if (fd < 0)
     {
         perror("open");
         return status;
@@ -793,19 +793,19 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
     char profile_name[256];
     snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
 
-    if (write(fd, profile_name, strlen(profile_name)) < 0) 
+    if (write(fd, profile_name, strlen(profile_name)) < 0)
     {
         if (errno == ENOENT)
             AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
-        else 
+        else
             perror("write");
-    } 
-    else 
+    }
+    else
     {
         status = true;
         AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
     }
-    
+
     close(fd);
     return status;
 }
