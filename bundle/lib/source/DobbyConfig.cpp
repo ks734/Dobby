@@ -27,6 +27,7 @@
 #include <glob.h>
 #include <sys/stat.h>
 #include <fstream>
+#include <fcntl.h>
 #include <FileUtilities.h>
 
 #define OCI_VERSION_CURRENT         "1.0.2"         // currently used version of OCI in bundles
@@ -779,32 +780,38 @@ bool DobbyConfig::updateBundleConfig(const ContainerId& id, std::shared_ptr<rt_d
  *  @return true if the apparmor profile was loaded in kernel space, otherwise false.
  */
 
-bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
-{
-    FILE *fp = nullptr;
-    char line[256];
-    bool status = false;
 
-    fp = fopen("/sys/kernel/security/apparmor/profiles", "r");
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <stdbool.h>
 
-    if (fp == nullptr)
-    {
-        AI_LOG_ERROR("/sys/kernel/security/apparmor/profiles open failed");
-        return status;
-    }
+bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const {
+    bool status = false;
+    int fd = open("/proc/self/attr/current", O_WRONLY);
+    if (fd < 0) {
+        perror("open");
+        return status;
+    }
 
-    while (fgets(line, sizeof(line), fp))
-    {
-        if (strstr(line, profile))
-        {
-            status = true;
-            AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
-            break;
-        }
-    }
+    char profile_name[256];
+    snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
 
-    fclose(fp);
-    return status;
+    if (write(fd, profile_name, strlen(profile_name)) < 0) {
+        if (errno == ENOENT) {
+            AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
+        } else {
+            perror("write");
+        }
+    } else {
+        status = true;
+        AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
+    }
+
+    close(fd);
+    return status;
 }
 
 // -----------------------------------------------------------------------------
