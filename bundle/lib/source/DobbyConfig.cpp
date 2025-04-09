@@ -787,7 +787,7 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
 
     if (fd < 0)
     {
-        perror("open");
+        AI_LOG_ERROR("/proc/self/attr/current open failed");
         return status;
     }
     char profile_name[256];
@@ -798,7 +798,7 @@ bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
         if (errno == ENOENT)
             AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
         else
-            perror("write");
+            AI_LOG_ERROR("/proc/self/attr/current write failed");
     }
     else
     {
