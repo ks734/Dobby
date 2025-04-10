@@ -781,34 +781,34 @@ bool DobbyConfig::updateBundleConfig(const ContainerId& id, std::shared_ptr<rt_d
  */
 
 bool DobbyConfig::isApparmorProfileLoaded(const char *profile) const
-{
-    bool status = false;
-    int fd = open("/proc/self/attr/current", O_WRONLY);
+ {
+     bool status = false;
+     int fd = open("/proc/self/attr/current", O_WRONLY);
 
-    if (fd < 0)
-    {
-        AI_LOG_ERROR("/proc/self/attr/current open failed");
-        return status;
-    }
-    char profile_name[256];
-    snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
+     if (fd < 0)
+     {
+         AI_LOG_ERROR("/proc/self/attr/current open failed");
+         return status;
+     }
+     char profile_name[256];
+     snprintf(profile_name, sizeof(profile_name), "permprofile %s", profile);
 
-    if (write(fd, profile_name, strlen(profile_name)) < 0)
-    {
-        if (errno == ENOENT)
-            AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
-        else
-            AI_LOG_ERROR("/proc/self/attr/current write failed");
-    }
-    else
-    {
-        status = true;
-        AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
-    }
+     if (write(fd, profile_name, strlen(profile_name)) < 0)
+     {
+         if (errno == ENOENT)
+             AI_LOG_INFO("Apparmor profile [%s] doesn't exist", profile);
+         else
+             AI_LOG_ERROR("/proc/self/attr/current write failed");
+     }
+     else
+     {
+         status = true;
+         AI_LOG_INFO("Apparmor profile [%s] is loaded", profile);
+     }
 
-    close(fd);
-    return status;
-}
+     close(fd);
+     return status;
+ }
 
 // -----------------------------------------------------------------------------
 /**
