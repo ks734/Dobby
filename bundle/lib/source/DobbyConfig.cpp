@@ -27,6 +27,7 @@
 #include <glob.h>
 #include <sys/stat.h>
 #include <fstream>
+#include <fcntl.h>
 #include <FileUtilities.h>
 
 #define OCI_VERSION_CURRENT         "1.0.2"         // currently used version of OCI in bundles
