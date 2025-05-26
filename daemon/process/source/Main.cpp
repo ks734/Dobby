@@ -339,6 +339,7 @@ static void daemonise()
             {
                 fprintf(fp, "%d", pid);
                 fflush(fp);
+                fclose(fp);
             }
         }
 
