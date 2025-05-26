@@ -669,7 +669,7 @@ bool DobbyUtils::callInNamespaceImpl(pid_t pid, int nsType,
             return false;
     }
 
-    bool success;
+    bool success = true;
 
     // get the namespace of the containered app
     sprintf(nsPath, "/proc/%d/ns/%s", pid, nsName);
