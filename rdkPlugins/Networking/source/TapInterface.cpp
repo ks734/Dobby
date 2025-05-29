@@ -95,6 +95,7 @@ bool TapInterface::createTapInterface(const std::shared_ptr<Netlink> &netlink)
     // (i.e. when the plugin finishes)
     if (ioctl(fd, TUNSETPERSIST, 1) != 0)
     {
+        close(fd);
         AI_LOG_SYS_ERROR_EXIT(errno, "Failed to set TUNSETPERSIST");
         return false;
     }
