@@ -208,7 +208,7 @@ std::shared_ptr<const rt_state_schema> getContainerState()
         {
             AI_LOG_ERROR("Most probably the read buffer is too small and causes the parse error below!");
         }
-        if
+        if (err)
         {
             free(err);
             err = nullptr;
