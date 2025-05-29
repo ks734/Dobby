@@ -2232,7 +2232,7 @@ bool DobbySpecConfig::processLegacyPlugins(const Json::Value& value,
 
 
         // add the hook to the list
-        mLegacyPlugins.emplace(name.asString(), std::move(data));
+        mLegacyPlugins.emplace(name.asString(), data);
 
         // Convert the explicit plugins into RDK extended OCI bundle syntax
         dictionary->ShowSection(ENABLE_LEGACY_PLUGINS);
