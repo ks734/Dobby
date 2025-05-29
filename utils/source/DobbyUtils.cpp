@@ -588,7 +588,7 @@ bool DobbyUtils::callInNamespaceImpl(int namespaceFd,
 {
     AI_LOG_FN_ENTRY();
 
-    bool success;
+    bool success = true;
 
     // spawn the thread to run the callback in
     std::thread _nsThread = std::thread(std::bind(&DobbyUtils::nsThread,
