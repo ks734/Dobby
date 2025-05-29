@@ -894,7 +894,7 @@ int DobbyUtils::runE2fsTool(int dirFd, std::list<std::string>* consoleOutput,
 
     // create a pipe to store the stderr and stdout of the mke2fs utility, this
     // is just to help with debugging issues
-    int pipeFds[2];
+    int pipeFds[2] = { -1, -1 };
     if (pipe2(pipeFds, O_CLOEXEC) != 0)
     {
         AI_LOG_SYS_ERROR_EXIT(errno, "failed to create stderr/stdout pipe");
