@@ -145,6 +145,7 @@ bool TapInterface::destroyTapInterface(const std::shared_ptr<Netlink> &netlink)
     // be deleted
     if (ioctl(fd, TUNSETPERSIST, 0) != 0)
     {
+        close(fd);
         AI_LOG_SYS_ERROR_EXIT(errno, "Failed to reset TUNSETPERSIST");
         return false;
     }
