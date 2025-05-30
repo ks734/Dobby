@@ -308,7 +308,7 @@ static void closeConsole()
             fprintf(stderr, "failed to redirect stdout (%d - %s)\n", errno, strerror(errno));
         if (dup2(fd, STDERR_FILENO) < 0)
             fprintf(stderr, "failed to redirect stderr (%d - %s)\n", errno, strerror(errno));
-        if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO)
+        if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO) //CID: 143003
             close(fd);
     }
 }
