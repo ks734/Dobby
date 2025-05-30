@@ -1005,24 +1005,31 @@ int DobbyUtils::runE2fsTool(int dirFd, std::list<std::string>* consoleOutput,
     // logging debug messages from the tool, the write end should now be closed
     // so the read shouldn't block
     char outputBuf[512];
-    ssize_t rd = TEMP_FAILURE_RETRY(read(pipeFds[0], outputBuf, sizeof(outputBuf) - 1));
-    if (rd < 0)
+    if (pipeFds[0] >= 0)
+    {
+        ssize_t rd = TEMP_FAILURE_RETRY(read(pipeFds[0], outputBuf, sizeof(outputBuf) - 1)); //142994
+        if (rd < 0)
+        {
+            AI_LOG_SYS_ERROR(errno, "failed to read from pipe");
+            outputBuf[0] = '\0';
+        }
+        else
+        {
+            outputBuf[rd] = '\0';
+        }
+
+        // close the read end of the pipe
+        if (close(pipeFds[0]) != 0)
+        {
+            AI_LOG_SYS_ERROR(errno, "failed to close read end of the pipe");
+        }
+    }
+    else
     {
         AI_LOG_SYS_ERROR(errno, "failed to read from pipe");
         outputBuf[0] = '\0';
     }
-    else
-    {
-        outputBuf[rd] = '\0';
-    }
-
-    // close the read end of the pipe
-    if ((pipeFds[0] >= 0) && (close(pipeFds[0]) != 0))
-    {
-        AI_LOG_SYS_ERROR(errno, "failed to close read end of the pipe");
-    }
-
-
+    
     // chop up the output, assuming each message is delimited by a newline
     if (consoleOutput != nullptr)
     {
