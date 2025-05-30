@@ -1007,7 +1007,7 @@ int DobbyUtils::runE2fsTool(int dirFd, std::list<std::string>* consoleOutput,
     char outputBuf[512];
     if (pipeFds[0] >= 0)
     {
-        ssize_t rd = TEMP_FAILURE_RETRY(read(pipeFds[0], outputBuf, sizeof(outputBuf) - 1)); //142994
+        ssize_t rd = TEMP_FAILURE_RETRY(read(pipeFds[0], outputBuf, sizeof(outputBuf) - 1)); //CID: 142994
         if (rd < 0)
         {
             AI_LOG_SYS_ERROR(errno, "failed to read from pipe");
