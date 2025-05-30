@@ -303,21 +303,12 @@ static void closeConsole()
     else
     {
         if (dup2(fd, STDIN_FILENO) < 0)
-        {
             fprintf(stderr, "failed to redirect stdin (%d - %s)\n", errno, strerror(errno));
-            close(fd);
-        }
         if (dup2(fd, STDOUT_FILENO) < 0)
-        {
             fprintf(stderr, "failed to redirect stdout (%d - %s)\n", errno, strerror(errno));
-            close(fd);
-        }
         if (dup2(fd, STDERR_FILENO) < 0)
-        {
             fprintf(stderr, "failed to redirect stderr (%d - %s)\n", errno, strerror(errno));
-            close(fd);
-        }
-        if (fd > STDERR_FILENO)
+        if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO)
             close(fd);
     }
 }
