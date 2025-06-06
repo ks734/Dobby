@@ -35,8 +35,6 @@ jobs:
         run: |
           sudo apt-get update -y -q
           sudo apt-get install -q -y automake libtool autotools-dev software-properties-common build-essential cmake libsystemd-dev libctemplate-dev libjsoncpp-dev libdbus-1-dev libnl-3-dev libnl-route-3-dev libsystemd-dev libyajl-dev libcap-dev libboost-dev lcov clang valgrind
-          sudo pip3 install xmltodict
-          sudo pip3 install requests
 
       - name: Set clang toolchain
         if: ${{ matrix.compiler == 'clang' }}
@@ -53,7 +51,7 @@ jobs:
          cd build
          if [ ${{ matrix.extra_flags }} = "RUN_TESTS" ]
          then
-             cmake -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}" -DRDK_PLATFORM=DEV_VM -DCMAKE_INSTALL_PREFIX:PATH=/usr -DENABLE_DOBBYL1TEST=ON -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ env.optional_flags }} ${{ env.optional_plugins }} ..
+             cmake -DRDK_PLATFORM=DEV_VM -DCMAKE_INSTALL_PREFIX:PATH=/usr -DENABLE_DOBBYL1TEST=ON -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ env.optional_flags }} ${{ env.optional_plugins }} ..
          else
              cmake -DCMAKE_TOOLCHAIN_FILE="${{ env.TOOLCHAIN_FILE }}" -DRDK_PLATFORM=DEV_VM -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.extra_flags }} ${{ env.optional_plugins }} ..
          fi
