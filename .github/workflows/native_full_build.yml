@@ -15,8 +15,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: native build
+      - name: install-dependencies
         run: |
-          chmod +x build_dependencies.sh cov_build.sh
-          sh -e build_dependencies.sh
-          sh -e cov_build.sh
+          sudo apt-get update -y -q
+          sudo apt-get install -q -y automake libtool autotools-dev software-properties-common build-essential cmake libsystemd-dev libctemplate-dev libjsoncpp-dev libdbus-1-dev libnl-3-dev libnl-route-3-dev libsystemd-dev libyajl-dev libcap-dev libboost-dev lcov clang valgrind
+      
+      - name: build dobby
+        run: |
+         cd $GITHUB_WORKSPACE
+         mkdir build
+         cd build
+         cmake -DRDK_PLATFORM=DEV_VM -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=Debug -DLEGACY_COMPONENTS=ON ${{ env.optional_plugins }} ..
+         make -j $(nproc)
