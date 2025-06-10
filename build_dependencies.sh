@@ -10,5 +10,5 @@ cd ${GITHUB_WORKSPACE}
 #1. Install Dependencies and packages
 
 apt update
-apt-get install -q -y automake libtool autotools-dev software-properties-common build-essential cmake libsystemd-dev libctemplate-dev libjsoncpp-dev libdbus-1-dev libnl-3-dev libnl-route-3-dev libsystemd-dev libyajl-dev libcap-dev libboost-dev lcov clang libyaml-dev
+apt-get install -q -y cmake libsystemd-dev libctemplate-dev libjsoncpp-dev libdbus-1-dev libnl-3-dev libnl-route-3-dev libyajl-dev libcap-dev libboost-dev clang libyaml-dev
 ############################
