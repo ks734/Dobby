@@ -86,7 +86,6 @@ jobs:
           &&
           lcov
           -r coverage.info
-          '11/*'
           '/usr/include/*'
           '*/tests/L1_testing/tests/*'
           -o filtered_coverage.info
