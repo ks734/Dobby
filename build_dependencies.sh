@@ -16,6 +16,7 @@ pip3 install requests
 ############################
 git clone https://github.com/containers/libocispec.git
 cd libocispec
+git checkout 9d1c2253a4098349749b7a60772ac3ec74338d5b
 
 meson build
 ninja -C build
