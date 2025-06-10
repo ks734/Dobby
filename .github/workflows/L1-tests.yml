@@ -79,6 +79,7 @@ jobs:
 
       - name: Generate coverage
         if: ${{ matrix.coverage == 'with-coverage' && matrix.extra_flags == 'RUN_TESTS' && matrix.build_type == 'Debug' }}
+        
         run: >
           lcov
           --rc geninfo_unexecuted_blocks=1
@@ -90,7 +91,6 @@ jobs:
           &&
           lcov
           -r coverage.info
-          '11/*'
           '/usr/include/*'
           '*/tests/L1_testing/tests/*'
           -o filtered_coverage.info
