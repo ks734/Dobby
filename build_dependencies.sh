@@ -14,8 +14,8 @@ apt-get install -q -y automake libtool autotools-dev software-properties-common 
 pip3 install xmltodict
 pip3 install requests
 ############################
-git clone https://github.com/opencontainers/ocispec.git
-cd ocispec
+git clone https://github.com/containers/libocispec.git
+cd libocispec
 
 meson build
 ninja -C build
