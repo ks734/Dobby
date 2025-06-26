@@ -896,6 +896,19 @@ bool NetworkSetup::setupVeth(const std::shared_ptr<DobbyRdkPluginUtils> &utils,
         }
     }
 
+    // Add an iptable rule for changing source ip address to 127.0.0.1
+    if (helper->ipv4())
+    {
+        Netfilter::RuleSet natRuleSet = {
+            { Netfilter::TableType::Nat, { "POSTROUTING -s " + helper->ipv4AddrStr() + " -d 127.0.0.1 -j SNAT --to-source 127.0.0.1" } }
+        };
+        if (!netfilter->addRules(natRuleSet, AF_INET, Netfilter::Operation::Append))
+        {
+            AI_LOG_ERROR("failed to add SNAT rule for changing source ip address to 127.0.0.1");
+        }
+        AI_LOG_INFO("Added SNAT rule for changing source ip address to 127.0.0.1 from %s", helper->ipv4AddrStr().c_str());
+    }
+
     AI_LOG_FN_EXIT();
     return true;
 }
