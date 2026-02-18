@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <strings.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <map>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -120,6 +121,12 @@ void FileSink::DumpLog(const int bufferFd)
 
     std::lock_guard<std::mutex> locker(mLock);
 
+    unsigned int loopCount = 0;
+    size_t totalRead = 0;
+
+    AI_LOG_DEBUG("[DumpLog] ENTRY: container=%s bufferFd=%d mOutputFileFd=%d mDevNullFd=%d",
+                 mContainerId.c_str(), bufferFd, mOutputFileFd, mDevNullFd);
+
     if (mOutputFileFd < 0) {
         AI_LOG_ERROR("Invalid output file descriptor");
         return;
@@ -131,20 +138,40 @@ void FileSink::DumpLog(const int bufferFd)
     // Read all the data from the provided file descriptor
     while (true)
     {
+        ++loopCount;
+        AI_LOG_DEBUG("[DumpLog] Loop #%u: calling read(bufferFd=%d)", loopCount, bufferFd);
+        errno = 0;
         ret = read(bufferFd, mBuf, sizeof(mBuf));
         if (ret <= 0)
         {
+            if (ret < 0) {
+                AI_LOG_ERROR("[DumpLog] Loop #%u: read failed, errno=%d (%s)",
+                             loopCount, errno, strerror(errno));
+            } else {
+                AI_LOG_DEBUG("[DumpLog] Loop #%u: read returned 0 (EOF)", loopCount);
+            }
             break;
         }
+
+        totalRead += ret;
+        AI_LOG_DEBUG("[DumpLog] Loop #%u: read returned %zd bytes (totalRead=%zu)",
+                     loopCount, ret, totalRead);
 
         offset += ret;
 
         if (offset <= mFileSizeLimit)
         {
             // Write to the output file
-            if (write(mOutputFileFd, mBuf, ret) < 0)
+            AI_LOG_DEBUG("[DumpLog] Loop #%u: calling write(mOutputFileFd=%d, %zd bytes)",
+                         loopCount, mOutputFileFd, ret);
+            errno = 0;
+            ssize_t writeRet = write(mOutputFileFd, mBuf, ret);
+            if (writeRet < 0)
             {
-                AI_LOG_SYS_ERROR(errno, "Write failed");
+                AI_LOG_ERROR("[DumpLog] Loop #%u: write FAILED fd=%d errno=%d (%s)",
+                             loopCount, mOutputFileFd, errno, strerror(errno));
+            } else {
+                AI_LOG_DEBUG("[DumpLog] Loop #%u: write returned %zd", loopCount, writeRet);
             }
         }
         else
@@ -156,9 +183,18 @@ void FileSink::DumpLog(const int bufferFd)
                             mContainerId.c_str(), mFileSizeLimit);
             }
             mLimitHit = true;
-            write(mDevNullFd, mBuf, ret);
+            AI_LOG_DEBUG("[DumpLog] Loop #%u: writing to /dev/null (fd=%d)",
+                         loopCount, mDevNullFd);
+            errno = 0;
+            if (write(mDevNullFd, mBuf, ret) < 0) {
+                AI_LOG_ERROR("[DumpLog] Loop #%u: write to /dev/null failed errno=%d (%s)",
+                             loopCount, errno, strerror(errno));
+            }
         }
     }
+
+    AI_LOG_DEBUG("[DumpLog] EXIT: container=%s completed %u loops, read %zu bytes",
+                 mContainerId.c_str(), loopCount, totalRead);
 
 #if (AI_BUILD_TYPE == AI_DEBUG)
     // Separate sections of log file for reabability
