@@ -124,6 +124,15 @@ void FileSink::DumpLog(const int bufferFd)
     unsigned int loopCount = 0;
     size_t totalRead = 0;
 
+    // Create temporary debug file to capture written data
+    char tmpPath[256];
+    snprintf(tmpPath, sizeof(tmpPath), "/tmp/dumplog_%s.log",
+             mContainerId.c_str());
+    int tmpFd = open(tmpPath, O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, 0644);
+    if (tmpFd >= 0) {
+        AI_LOG_INFO("[DumpLog] Debug: Writing to temporary file: %s", tmpPath);
+    }
+
     AI_LOG_DEBUG("[DumpLog] ENTRY: container=%s bufferFd=%d mOutputFileFd=%d mDevNullFd=%d",
                  mContainerId.c_str(), bufferFd, mOutputFileFd, mDevNullFd);
 
@@ -172,6 +181,10 @@ void FileSink::DumpLog(const int bufferFd)
                              loopCount, mOutputFileFd, errno, strerror(errno));
             } else {
                 AI_LOG_DEBUG("[DumpLog] Loop #%u: write returned %zd", loopCount, writeRet);
+                // Also write to debug temp file
+                if (tmpFd >= 0) {
+                    write(tmpFd, mBuf, ret);
+                }
             }
         }
         else
@@ -195,6 +208,11 @@ void FileSink::DumpLog(const int bufferFd)
 
     AI_LOG_DEBUG("[DumpLog] EXIT: container=%s completed %u loops, read %zu bytes",
                  mContainerId.c_str(), loopCount, totalRead);
+
+    if (tmpFd >= 0) {
+        close(tmpFd);
+        AI_LOG_INFO("[DumpLog] Debug: Temporary file written: %s (%zu bytes)", tmpPath, totalRead);
+    }
 
 #if (AI_BUILD_TYPE == AI_DEBUG)
     // Separate sections of log file for reabability
