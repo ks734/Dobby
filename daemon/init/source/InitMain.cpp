@@ -27,10 +27,17 @@
  *  https://blog.phusion.nl/2015/01/20/docker-and-the-pid-1-zombie-reaping-problem/
  *
  *  It boils down to ensuring we have an 'init' process that does at least the
- *  following two things:
+ *  following things:
  *
  *      1. Reaps adopted child processes.
  *      2. Forwards on signals to child processes.
+ *      3. Propagates fatal crash signals (SIGABRT, SIGSEGV, SIGILL, SIGFPE,
+ *         SIGQUIT, SIGBUS) as WIFSIGNALED to the parent (Dobby) so that crash
+ *         vs clean-stop can be distinguished by callers.  This is done by
+ *         re-raising the signal with default disposition after all children
+ *         have been reaped.  Graceful-stop signals (SIGTERM, SIGHUP, SIGINT)
+ *         are intentionally excluded so that normal Dobby-initiated shutdown
+ *         still produces WIFEXITED=true as callers expect.
  *
  *  In addition to the above it provides some basic logging to indicate why a
  *  child process died.
@@ -229,6 +236,38 @@ static void checkForOOM(void)
 
 #endif // (AI_BUILD_TYPE == AI_DEBUG)
 
+// Fatal signal received by DobbyInit itself (set in signalHandler).
+// Only crash/fatal signals are recorded here (SIGABRT, SIGSEGV, SIGILL,
+// SIGFPE, SIGQUIT, SIGBUS) — NOT graceful-stop signals such as SIGTERM,
+// SIGHUP, SIGINT or app-defined signals (SIGUSR1/2).
+// Used to re-raise the signal after all children are reaped so that
+// Dobby's waitpid() sees WIFSIGNALED=true / WTERMSIG=<signal> rather
+// than WIFEXITED=true.
+static volatile sig_atomic_t gReceivedFatalSignal = 0;
+
+// Returns true for signals that represent a crash/abnormal termination and
+// should be propagated as WIFSIGNALED to Dobby's waitpid().
+// Graceful-stop signals (SIGTERM, SIGHUP, SIGINT, SIGALRM) must NOT be
+// included — Dobby sends SIGTERM for normal container shutdown and expects
+// WIFEXITED=true in that case.
+static bool isFatalSignal(int sigNum)
+{
+    switch (sigNum)
+    {
+        case SIGABRT:
+        case SIGSEGV:
+        case SIGILL:
+        case SIGFPE:
+        case SIGQUIT:   // produces core dump
+#ifdef SIGBUS
+        case SIGBUS:
+#endif
+            return true;
+        default:
+            return false;
+    }
+}
+
 static int doForkExec(int argc, char * argv[])
 {
     // if a ETHAN_LOG pipe was supplied then we don't want to close that as we
@@ -258,6 +297,7 @@ static int doForkExec(int argc, char * argv[])
     {
         LOG_ERR("failed to fork and launch app (%d - %s)", errno, strerror(errno));
         return EXIT_FAILURE;
+
     }
 
     if (exePid == 0)
@@ -307,10 +347,26 @@ static int doForkExec(int argc, char * argv[])
     // as we'll be holding the file descriptors open for the lifetime of the
     // container ... whereas it's the app that we run that should manage the
     // lifetime of any supplied descriptors (except stdin, stdout and stderr)
+    LOG_NFO("forked main child (exePid=%d) for '%s'", exePid, argv[1]);
     closeAllFileDescriptors(logPipeFd);
 
 
     int ret = EXIT_FAILURE;
+
+    // Track signals from dying children so DobbyInit can re-raise after all
+    // children are reaped. This ensures Dobby's waitpid() on the DobbyInit PID
+    // sees WIFSIGNALED=true / WTERMSIG=<signal> rather than WIFEXITED=true.
+    //
+    // Two cases:
+    //  1. exePid itself was killed by a signal (direct child crash).
+    //  2. exePid exited cleanly but a sibling child died by signal first
+    //     (e.g. exePid is a launcher wrapper whose payload is a grandchild;
+    //      the grandchild crashes, its death is forwarded via signalHandler to
+    //      all processes including the launcher, which then exits cleanly with
+    //      code 0 — DobbyInit only sees the launcher's clean exit).
+    //     In this case we use any signal-killed child as the propagated signal.
+    int exeTermSignal = 0;   // signal from exePid itself (highest priority)
+    int anyTermSignal = 0;   // signal from any other child (fallback)
 
     // wait for all children to finish
     pid_t pid;
@@ -319,10 +375,19 @@ static int doForkExec(int argc, char * argv[])
     {
         if (pid > 0)
         {
+            // ###DBG Step4: log raw wait status for each reaped child
+            LOG_NFO("###DBG Step4: wait() reaped pid=%d [%s] status=0x%04x "
+                    "WIFSIGNALED=%d(sig=%d,core=%d) WIFEXITED=%d(code=%d)",
+                    pid, (pid == exePid) ? "exePid" : "child", status,
+                    WIFSIGNALED(status), WIFSIGNALED(status) ? WTERMSIG(status) : 0,
+                                         WIFSIGNALED(status) ? WCOREDUMP(status) : 0,
+                    WIFEXITED(status),   WIFEXITED(status)   ? WEXITSTATUS(status) : -1);
+
             char msg[128];
             int msglen;
 
-            msglen = snprintf(msg, sizeof(msg), "pid %d has terminated ", pid);
+            msglen = snprintf(msg, sizeof(msg), "pid %d [%s] has terminated ",
+                           pid, (pid == exePid) ? "exePid" : "child");
 
             if (WIFSIGNALED(status))
             {
@@ -334,6 +399,39 @@ static int doForkExec(int argc, char * argv[])
                     msglen += snprintf(msg + msglen, sizeof(msg) - msglen,
                                        "and produced a core dump ");
                 }
+
+                // record if the main child was killed by a signal so we can
+                // propagate it after all children are reaped.
+                // Only track fatal/crash signals — not graceful-stop signals.
+                if (isFatalSignal(WTERMSIG(status)))
+                {
+                    if (pid == exePid)
+                    {
+                        exeTermSignal = WTERMSIG(status);
+                        // ###DBG Step4: exePid itself killed by fatal signal
+                        // OLD code: ret stays EXIT_FAILURE, DobbyInit returns → WIFEXITED=true (BUG)
+                        // NEW code: exeTermSignal=%d recorded, will re-raise after loop
+                        LOG_NFO("###DBG Step4: exePid=%d killed by fatal sig=%d "
+                                "- OLD: DobbyInit would exit cleanly (WIFEXITED=true BUG); "
+                                "NEW: exeTermSignal=%d recorded",
+                                pid, exeTermSignal, exeTermSignal);
+                    }
+                    else if (anyTermSignal == 0)
+                    {
+                        // keep the first fatal-signal-killed child as fallback
+                        anyTermSignal = WTERMSIG(status);
+                        LOG_NFO("###DBG Step4: non-exePid child=%d killed by fatal sig=%d "
+                                "- anyTermSignal=%d recorded (launcher-wrapper fallback)",
+                                pid, anyTermSignal, anyTermSignal);
+                    }
+                }
+                else
+                {
+                    // non-fatal signal (e.g. SIGTERM) — old and new code both ignore for re-raise
+                    LOG_NFO("###DBG Step4: pid=%d killed by non-fatal sig=%d "
+                            "- not recorded (graceful-stop signal)",
+                            pid, WTERMSIG(status));
+                }
             }
 
             if (WIFEXITED(status))
@@ -344,6 +442,11 @@ static int doForkExec(int argc, char * argv[])
                 if (pid == exePid)
                 {
                     ret = WEXITSTATUS(status);
+                    // ###DBG Step5: exePid exited cleanly with code %d
+                    // OLD code: DobbyInit would return this → WIFEXITED=true (BUG if crash)
+                    LOG_NFO("###DBG Step5: exePid=%d WIFEXITED exitcode=%d - "
+                            "OLD code would return this making DobbyDaemon see WIFEXITED=true",
+                            pid, ret);
                 }
             }
 
@@ -361,6 +464,53 @@ static int doForkExec(int argc, char * argv[])
         }
     }
 
+    // Re-raise signal with default disposition so DobbyInit terminates by it,
+    // propagating WIFSIGNALED/WTERMSIG/WCOREDUMP up to Dobby's waitpid().
+    //
+    // Priority (highest first):
+    //  1. gReceivedFatalSignal - DobbyInit itself was sent a fatal signal
+    //                            (e.g. kill -11 <pid>). Most authoritative.
+    //  2. exeTermSignal        - exePid (main child) was killed by a fatal signal.
+    //  3. anyTermSignal        - a sibling child was killed by a fatal signal
+    //                            (launcher-wrapper case: exePid exits cleanly
+    //                             after its payload crashes).
+    //
+    // Graceful-stop signals (SIGTERM, SIGHUP, SIGINT, SIGALRM) are excluded
+    // from all three sources, so normal Dobby-initiated shutdown continues
+    // to produce WIFEXITED=true as callers expect.
+    const int sigToRaise = (gReceivedFatalSignal != 0) ? static_cast<int>(gReceivedFatalSignal)
+                         : (exeTermSignal        != 0) ? exeTermSignal
+                         :                               anyTermSignal;
+    // ###DBG Step5+6: summary of what old code would do vs what new code does
+    LOG_NFO("###DBG Step5: wait loop done - exePid=%d ret=%d "
+            "gReceivedFatalSignal=%d exeTermSignal=%d anyTermSignal=%d sigToRaise=%d",
+            exePid, ret, static_cast<int>(gReceivedFatalSignal), exeTermSignal, anyTermSignal, sigToRaise);
+    if (sigToRaise == 0)
+    {
+        LOG_NFO("###DBG Step6(OLD path): sigToRaise=0 → DobbyInit returns ret=%d "
+                "→ DobbyDaemon sees WIFEXITED=1 WEXITSTATUS=%d (correct for graceful stop)",
+                ret, ret);
+    }
+    else
+    {
+        LOG_NFO("###DBG Step6(OLD path would be): ret=%d → DobbyDaemon would see WIFEXITED=1 (BUG)",
+                ret);
+        LOG_NFO("###DBG Step6(NEW path): re-raising sig=%d with SIG_DFL "
+                "→ DobbyInit dies by signal → DobbyDaemon sees WIFSIGNALED=1 WTERMSIG=%d (FIX)",
+                sigToRaise, sigToRaise);
+    }
+
+    LOG_NFO("wait loop done: exePid=%d ret=%d gReceivedFatalSignal=%d exeTermSignal=%d anyTermSignal=%d sigToRaise=%d",
+            exePid, ret, static_cast<int>(gReceivedFatalSignal), exeTermSignal, anyTermSignal, sigToRaise);
+    if (sigToRaise != 0)
+    {
+        LOG_NFO("re-raising signal %d (exePid-signal=%d any-signal=%d) to propagate to Dobby",
+                sigToRaise, exeTermSignal, anyTermSignal);
+        signal(sigToRaise, SIG_DFL);
+        raise(sigToRaise);
+        // raise() should not return - if it does fall through to EXIT_FAILURE
+    }
+
 #if (AI_BUILD_TYPE == AI_DEBUG)
 
     // check the memory cgroups memory status for allocation failures, this is
@@ -374,7 +524,37 @@ static int doForkExec(int argc, char * argv[])
 
 static void signalHandler(int sigNum)
 {
-    // consume the signal but passes it onto all processes in the container
+    // ###DBG Step2: signalHandler called for signal %d (DobbyInit pid=%d)
+    // OLD code path: would just call kill(-1, sig) and return — DobbyInit
+    // survives the signal and eventually exits cleanly → WIFEXITED=true (BUG)
+    // NEW code path: records fatal signals in gReceivedFatalSignal so we can
+    // re-raise after children are reaped → WIFSIGNALED=true (FIX)
+    LOG_NFO("###DBG Step2: signalHandler(sig=%d) DobbyInit(pid=%d) - "
+            "OLD would just forward+return (DobbyInit survives!); "
+            "NEW records isFatalSignal=%d",
+            sigNum, getpid(), isFatalSignal(sigNum) ? 1 : 0);
+
+    // Record fatal/crash signals so doForkExec() can re-raise after all
+    // children are reaped, ensuring DobbyInit itself dies by the signal.
+    // Graceful-stop signals (SIGTERM etc.) are intentionally not recorded
+    // so that normal container shutdown still results in WIFEXITED=true.
+    if (isFatalSignal(sigNum))
+    {
+        gReceivedFatalSignal = sigNum;
+        LOG_NFO("###DBG Step2: gReceivedFatalSignal set to %d - will re-raise after wait loop",
+                sigNum);
+    }
+    else
+    {
+        LOG_NFO("###DBG Step2: sig=%d is NOT fatal (graceful-stop) - gReceivedFatalSignal stays 0",
+                sigNum);
+    }
+
+    // ###DBG Step3: broadcast to all container processes via kill(-1, sig)
+    LOG_NFO("###DBG Step3: broadcasting sig=%d to all container processes via kill(-1, sig)",
+            sigNum);
+
+    // forward the signal to all processes in the container
     kill(-1, sigNum);
 }
 
@@ -397,4 +577,3 @@ int main(int argc, char * argv[])
 
     return doForkExec(argc, argv);
 }
-
