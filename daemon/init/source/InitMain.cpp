@@ -227,12 +227,12 @@ static void checkForOOM(void)
     }
 }
 
+#endif // (AI_BUILD_TYPE == AI_DEBUG)
+
 // Stores the last signal received by DobbyInit itself so we can re-raise it
 // after reaping children, allowing the parent (DobbyDaemon) to see that we
 // were killed by a signal rather than a normal exit.
 static volatile sig_atomic_t gReceivedSignal = 0;
-
-#endif // (AI_BUILD_TYPE == AI_DEBUG)
 
 static int doForkExec(int argc, char * argv[])
 {
