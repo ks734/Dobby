@@ -369,11 +369,39 @@ static int doForkExec(int argc, char * argv[])
 
 #endif
 
+    // If DobbyInit was signalled, re-raise the signal so that
+    // the parent process (DobbyDaemon) sees WIFSIGNALED=true in waitpid()
+    // rather than a normal exit with a non-zero exit code.  Without this,
+    // the signal information is lost because DobbyInit's signalHandler only
+    // forwards the signal to children and then DobbyInit exits normally.
+    if (gReceivedSignal != 0)
+    {
+        int sig = gReceivedSignal;
+        LOG_NFO("DobbyInit re-raising signal %d (%s) to propagate to parent",
+                sig, strsignal(sig));
+
+        // Reset the signal handler to default so the re-raised signal
+        // actually kills us (and the parent sees it via WIFSIGNALED).
+        signal(sig, SIG_DFL);
+        raise(sig);
+
+        // Should not reach here, but just in case:
+        _exit(128 + sig);
+    }
+
     return ret;
 }
 
+// Stores the last signal received by DobbyInit itself so we can re-raise it
+// after reaping children, allowing the parent (DobbyDaemon) to see that we
+// were killed by a signal rather than a normal exit.
+static volatile sig_atomic_t gReceivedSignal = 0;
+
 static void signalHandler(int sigNum)
 {
+    // record the signal so we can re-raise it later
+    gReceivedSignal = sigNum;
+
     // consume the signal but passes it onto all processes in the container
     kill(-1, sigNum);
 }
