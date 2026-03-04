@@ -397,11 +397,6 @@ static int doForkExec(int argc, char * argv[])
     return ret;
 }
 
-// Stores the last signal received by DobbyInit itself so we can re-raise it
-// after reaping children, allowing the parent (DobbyDaemon) to see that we
-// were killed by a signal rather than a normal exit.
-static volatile sig_atomic_t gReceivedSignal = 0;
-
 static void signalHandler(int sigNum)
 {
     // record the signal so we can re-raise it later
