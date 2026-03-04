@@ -3011,6 +3011,22 @@ void DobbyManager::handleContainerTerminate(const ContainerId &id, const std::un
 {
     AI_LOG_FN_ENTRY();
 
+    AI_LOG_INFO("handleContainerTerminate: container '%s' raw status=0x%04x, "
+                "WIFEXITED=%s, WEXITSTATUS=%d, WIFSIGNALED=%s, WTERMSIG=%d"
+#ifdef WCOREDUMP
+                ", WCOREDUMP=%s"
+#endif
+                ,
+                id.c_str(), status,
+                WIFEXITED(status) ? "true" : "false",
+                WIFEXITED(status) ? WEXITSTATUS(status) : -1,
+                WIFSIGNALED(status) ? "true" : "false",
+                WIFSIGNALED(status) ? WTERMSIG(status) : -1
+#ifdef WCOREDUMP
+                , WCOREDUMP(status) ? "true" : "false"
+#endif
+                );
+
     // this function is called when the runc process dies, what this
     // boils down to is that if we're in the Running state it
     // means that the preStart hook has been called but postStop hasn't
@@ -3164,6 +3180,51 @@ void DobbyManager::onChildExit()
 
             AI_LOG_INFO("runc for container '%s' has quit (pid:%d status:0x%04x)",
                         id.c_str(), containerPid, status);
+
+            // Log detailed exit status diagnostics
+            if (WIFEXITED(status))
+            {
+                AI_LOG_INFO("container '%s' WIFEXITED=true, WEXITSTATUS=%d",
+                            id.c_str(), WEXITSTATUS(status));
+                if (WEXITSTATUS(status) == 0)
+                {
+                    AI_LOG_INFO("container '%s' exited successfully (exit code 0)",
+                                id.c_str());
+                }
+                else
+                {
+                    AI_LOG_WARN("container '%s' exited with non-zero exit code %d",
+                                id.c_str(), WEXITSTATUS(status));
+                }
+            }
+            else
+            {
+                AI_LOG_INFO("container '%s' WIFEXITED=false (did NOT exit normally)",
+                            id.c_str());
+            }
+
+            if (WIFSIGNALED(status))
+            {
+                AI_LOG_WARN("container '%s' WIFSIGNALED=true, WTERMSIG=%d (%s)",
+                            id.c_str(), WTERMSIG(status), strsignal(WTERMSIG(status)));
+#ifdef WCOREDUMP
+                if (WCOREDUMP(status))
+                {
+                    AI_LOG_WARN("container '%s' WCOREDUMP=true (core dump produced)",
+                                id.c_str());
+                }
+                else
+                {
+                    AI_LOG_INFO("container '%s' WCOREDUMP=false (no core dump)",
+                                id.c_str());
+                }
+#endif // WCOREDUMP
+            }
+            else
+            {
+                AI_LOG_INFO("container '%s' WIFSIGNALED=false (was NOT killed by a signal)",
+                            id.c_str());
+            }
 
             handleContainerTerminate(id, container, status);
 
