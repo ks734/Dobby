@@ -3178,6 +3178,28 @@ void DobbyManager::onChildExit()
         {
             const ContainerId &id = it->first;
 
+            // DobbyInit is PID 1 inside the container's PID namespace and
+            // cannot be killed by a self-raised signal (the kernel drops
+            // signals with SIG_DFL disposition for namespace init).  Instead
+            // DobbyInit exits with code 128+signum when it receives a signal.
+            // Detect that convention here and synthesise a WIFSIGNALED-style
+            // wait status so the rest of the code sees the true cause of death.
+            if (WIFEXITED(status))
+            {
+                int exitCode = WEXITSTATUS(status);
+                if (exitCode > 128 && exitCode <= 128 + 64)
+                {
+                    int sig = exitCode - 128;
+                    AI_LOG_INFO("container '%s' exited with code %d, "
+                                "interpreting as killed by signal %d (%s) "
+                                "(PID 1 namespace init convention)",
+                                id.c_str(), exitCode, sig, strsignal(sig));
+
+                    // Synthesise WIFSIGNALED status: signal number in bits 0-6
+                    status = sig & 0x7f;
+                }
+            }
+
             AI_LOG_INFO("runc for container '%s' has quit (pid:%d status:0x%04x)",
                         id.c_str(), containerPid, status);
 
