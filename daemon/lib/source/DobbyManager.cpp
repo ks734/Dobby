@@ -1372,18 +1372,18 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
              container->state == DobbyContainer::State::Hibernated ||
              container->state == DobbyContainer::State::Awakening)
     {
-        // If the container is hibernating or hibernated, abort the ongoing
-        // hibernation by waking up all processes before sending the kill signal.
-        // This prevents memcr_worker from trying to hibernate/checkpoint PIDs
-        // that have already been terminated by the stop.
-        if (container->state == DobbyContainer::State::Hibernating ||
-            container->state == DobbyContainer::State::Hibernated)
+        // If the container is hibernating, abort the ongoing hibernation by
+        // waking up all processes before sending the kill signal. This prevents
+        // the hibernate thread from trying to checkpoint PIDs that have
+        // already been terminated by the stop. For hibernated containers, all
+        // processes are already frozen so we can just kill directly.
+        if (container->state == DobbyContainer::State::Hibernating)
         {
-            AI_LOG_INFO("Container '%s' is in hibernate state, waking up before stop", id.c_str());
+            AI_LOG_INFO("Container '%s' is hibernating, waking up before stop", id.c_str());
 
-            // Set state to Awakening so the hibernate thread aborts on its
+            // Set state to Stopping so the hibernate thread aborts on its
             // next iteration check
-            container->state = DobbyContainer::State::Awakening;
+            container->state = DobbyContainer::State::Stopping;
 
             // Get PIDs while holding the lock
             Json::Value jsonPids = DobbyStats(id, mEnvironment, mUtilities).stats()["pids"];
@@ -3057,6 +3057,28 @@ bool DobbyManager::onPreDestructionHook(const ContainerId &id,
 void DobbyManager::handleContainerTerminate(const ContainerId &id, const std::unique_ptr<DobbyContainer>& container, const int status)
 {
     AI_LOG_FN_ENTRY();
+
+    if (WIFEXITED(status))
+    {
+        const int exitCode = WEXITSTATUS(status);
+        if (exitCode == 0)
+        {
+            AI_LOG_INFO("container '%s' exited normally with exit code 0", id.c_str());
+        }
+        else
+        {
+            AI_LOG_WARN("container '%s' exited with non-zero exit code %d", id.c_str(), exitCode);
+        }
+    }
+    else if (WIFSIGNALED(status))
+    {
+        AI_LOG_ERROR("container '%s' was killed by signal %d (%s)", id.c_str(),
+                     WTERMSIG(status), strsignal(WTERMSIG(status)));
+    }
+    else
+    {
+        AI_LOG_WARN("container '%s' terminated with unexpected status 0x%04x", id.c_str(), status);
+    }
 
     // this function is called when the runc process dies, what this
     // boils down to is that if we're in the Running state it
