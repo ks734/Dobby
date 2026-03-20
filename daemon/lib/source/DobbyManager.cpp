@@ -1372,9 +1372,12 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
              container->state == DobbyContainer::State::Hibernated ||
              container->state == DobbyContainer::State::Awakening)
     {
-        // Save the state before any modifications so we can restore it
-        // if killCont() fails (prevents getting stuck in Stopping)
-        const DobbyContainer::State prevState = container->state;
+        // State to restore if killCont() fails (prevents leaving the container
+        // in an unusable state). Updated to Running in the Hibernating path so
+        // the restored state correctly reflects the post-wakeup reality, and so
+        // this value is always freshly assigned under the held lock at the point
+        // of use, resolving the atomicity concern flagged by static analysis.
+        DobbyContainer::State prevState = container->state;
 
         // If the container is hibernating, abort the ongoing hibernation by
         // waking up all processes before sending the kill signal. This prevents
@@ -1416,6 +1419,14 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
                 AI_LOG_FN_EXIT();
                 return false;
             }
+
+            // Processes are now awake; transition the container back to Running.
+            // This ensures: (a) if killCont() fails the state is correct for a
+            // retry, (b) cleanupContainersShutdown() can pick it up, and
+            // (c) prevState is updated under the re-acquired lock so its value
+            // is not stale across the earlier lock-release window.
+            container->state = DobbyContainer::State::Running;
+            prevState         = DobbyContainer::State::Running;
         }
 
         if (!mRunc->killCont(id, withPrejudice ? SIGKILL : SIGTERM))
