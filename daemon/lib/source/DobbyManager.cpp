@@ -1372,12 +1372,10 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
              container->state == DobbyContainer::State::Hibernated ||
              container->state == DobbyContainer::State::Awakening)
     {
-        // State to restore if killCont() fails (prevents leaving the container
-        // in an unusable state). Updated to Running in the Hibernating path so
-        // the restored state correctly reflects the post-wakeup reality, and so
-        // this value is always freshly assigned under the held lock at the point
-        // of use, resolving the atomicity concern flagged by static analysis.
-        DobbyContainer::State prevState = container->state;
+        // State to restore if killCont() fails (prevents getting stuck in
+        // Stopping, which would make subsequent stop attempts a no-op).
+        bool hibernatingStop = false;
+        DobbyContainer::State previousState = container->state;
 
         // If the container is hibernating, abort the ongoing hibernation by
         // waking up all processes before sending the kill signal. This prevents
@@ -1387,9 +1385,12 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
         {
             AI_LOG_INFO("Container '%s' is hibernating, waking up before stop", id.c_str());
 
-            // Set state to Stopping so the hibernate thread sees the state
-            // change and aborts before hibernating the next PID
+            // Remember the previous state and set state to Stopping so the
+            // hibernate thread sees the state change and aborts before
+            // hibernating the next PID
+            previousState = container->state;
             container->state = DobbyContainer::State::Stopping;
+            hibernatingStop = true;
 
             // Get PIDs while holding the lock
             Json::Value jsonPids = DobbyStats(id, mEnvironment, mUtilities).stats()["pids"];
@@ -1419,22 +1420,16 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
                 AI_LOG_FN_EXIT();
                 return false;
             }
-
-            // Processes are now awake; transition the container back to Running.
-            // This ensures: (a) if killCont() fails the state is correct for a
-            // retry, (b) cleanupContainersShutdown() can pick it up, and
-            // (c) prevState is updated under the re-acquired lock so its value
-            // is not stale across the earlier lock-release window.
-            container->state = DobbyContainer::State::Running;
-            prevState         = DobbyContainer::State::Running;
         }
 
         if (!mRunc->killCont(id, withPrejudice ? SIGKILL : SIGTERM))
         {
-            // Restore the previous state so the container doesn't get stuck
-            // in Stopping, which would make subsequent stop attempts a no-op
-            container->state = prevState;
             AI_LOG_WARN("failed to send signal to '%s'", id.c_str());
+            // If we transitioned from Hibernating to Stopping and the kill
+            // failed, restore to Running (not Hibernating) because the
+            // processes have already been woken up by WakeupProcess above.
+            container->state = hibernatingStop ? DobbyContainer::State::Running
+                                               : previousState;
             AI_LOG_FN_EXIT();
             return false;
         }
