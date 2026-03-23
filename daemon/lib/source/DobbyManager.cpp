@@ -1372,9 +1372,9 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
              container->state == DobbyContainer::State::Hibernated ||
              container->state == DobbyContainer::State::Awakening)
     {
-        // State to restore if killCont() fails (prevents getting stuck in
-        // Stopping, which would make subsequent stop attempts a no-op).
-        DobbyContainer::State previousState = container->state;
+        // Save the state before any modifications so we can restore it
+        // if killCont() fails (prevents getting stuck in Stopping).
+        const DobbyContainer::State prevState = container->state;
 
         // If the container is hibernating, abort the ongoing hibernation by
         // waking up all processes before sending the kill signal. This prevents
@@ -1416,15 +1416,6 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
                 AI_LOG_FN_EXIT();
                 return false;
             }
-
-            // Processes are now awake; transition back to Running so that
-            // cleanupContainersShutdown() can handle this container correctly
-            // if the daemon shuts down before the container terminates, and
-            // so that a retry of stopContainer() is possible if killCont fails.
-            // Also update previousState so the killCont failure path below
-            // restores the correct state without needing a separate flag.
-            container->state = DobbyContainer::State::Running;
-            previousState    = DobbyContainer::State::Running;
         }
 
         if (!mRunc->killCont(id, withPrejudice ? SIGKILL : SIGTERM))
@@ -1432,9 +1423,15 @@ bool DobbyManager::stopContainer(int32_t cd, bool withPrejudice)
             AI_LOG_WARN("failed to send signal to '%s'", id.c_str());
             // Restore the previous state so the container doesn't get stuck
             // in Stopping, which would make subsequent stop attempts a no-op.
-            // For the hibernating path previousState was updated to Running
-            // above (after WakeupProcess), so we never restore to Hibernating.
-            container->state = previousState;
+            // For the hibernating path prevState is Hibernating but the
+            // hibernate thread was already aborted and all processes are awake,
+            // so restoring to Hibernating would leave the container permanently
+            // stuck. Restore to Running instead so a retry is possible.
+            // mContainers[id] is used (rather than the pre-unlock 'container'
+            // reference) to guarantee we write through a live map entry.
+            mContainers[id]->state = (prevState == DobbyContainer::State::Hibernating)
+                                         ? DobbyContainer::State::Running
+                                         : prevState;
             AI_LOG_FN_EXIT();
             return false;
         }
