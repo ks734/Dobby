@@ -18,6 +18,10 @@
 */
 
 #include "OOMCrashPlugin.h"
+
+#include <map>
+
+#define FIREBOLT_STATE "fireboltState"
 /**
  * Need to do this at the start of every plugin to make sure the correct
  * C methods are visible to allow PluginLauncher to find the plugin
@@ -173,16 +177,21 @@ std::vector<std::string> OOMCrash::getDependencies() const
 }
 
 /**
- * @brief Read cgroup file.
+ * @brief Read the oom_kill counter from the cgroup memory.oom_control file.
  *
- *  @param[out]  val      gives the number of times that the cgroup limit was exceeded.
+ *  The memory.oom_control file contains multiple key-value lines, e.g.:
+ *    oom_kill_disable 0
+ *    under_oom        0
+ *    oom_kill         1
  *
- * @return true on successfully reading from the file.
+ *  @param[out]  val   Set to the value of the 'oom_kill' field on success.
+ *
+ * @return true on successfully reading and parsing the field.
  */
 
 bool OOMCrash::readCgroup(unsigned long *val)
 {
-    std::string path = "/sys/fs/cgroup/memory/" + mUtils->getContainerId() + "/memory.failcnt";
+    std::string path = "/sys/fs/cgroup/memory/" + mUtils->getContainerId() + "/memory.oom_control";
 
     FILE *fp = fopen(path.c_str(), "r");
     if (!fp)
@@ -196,22 +205,29 @@ bool OOMCrash::readCgroup(unsigned long *val)
     char* line = nullptr;
     size_t len = 0;
     ssize_t rd;
+    bool found = false;
 
-    if ((rd = getline(&line, &len, fp)) < 0)
+    while ((rd = getline(&line, &len, fp)) > 0)
     {
-        if (line)
-            free(line);
-        fclose(fp);
-        AI_LOG_ERROR("failed to read cgroup file line (%d - %s)", errno, strerror(errno));
-        return false;
+        unsigned long v;
+        // sscanf won't match "oom_kill_disable" because the space in the
+        // format requires whitespace where "_disable" has an underscore.
+        if (sscanf(line, "oom_kill %lu", &v) == 1)
+        {
+            *val = v;
+            found = true;
+            break;
+        }
     }
 
-    *val = strtoul(line, nullptr, 0);
-
+    if (line)
+        free(line);
     fclose(fp);
-    free(line);
 
-    return true;
+    if (!found)
+        AI_LOG_ERROR("oom_kill field not found in '%s'", path.c_str());
+
+    return found;
 }
 
 /**
@@ -222,19 +238,34 @@ bool OOMCrash::readCgroup(unsigned long *val)
 
 bool OOMCrash::checkForOOM()
 {
-    unsigned long failCnt;
-    bool status;
-    if (readCgroup(&failCnt) && (failCnt > 0))
+    unsigned long oomKill;
+    if (!readCgroup(&oomKill))
     {
-        AI_LOG_WARN("memory allocation failure detected in %s container, likely OOM (failcnt = %lu)", mUtils->getContainerId().c_str(), failCnt);
-        status = true; 
+        AI_LOG_WARN("Failed to read oom_control for container '%s'", mUtils->getContainerId().c_str());
+        return false;
+    }
+
+    if (oomKill == 0)
+    {
+        AI_LOG_INFO("No OOM kill detected in container '%s'", mUtils->getContainerId().c_str());
+        return false;
+    }
+
+    // OOM kill confirmed - retrieve firebolt state from annotations
+    std::map<std::string, std::string> annotations = mUtils->getAnnotations();
+    auto it = annotations.find(FIREBOLT_STATE);
+    if (it != annotations.end())
+    {
+        AI_LOG_WARN("OOM kill detected: container '%s' fireboltState '%s'",
+                    mUtils->getContainerId().c_str(), it->second.c_str());
     }
     else
     {
-        AI_LOG_WARN("No OOM failure detected in %s container", mUtils->getContainerId().c_str());
-        status = false;
+        AI_LOG_WARN("OOM kill detected: container '%s' (firebolt state unknown)",
+                    mUtils->getContainerId().c_str());
     }
-    return status;
+
+    return true;
 }
 
 /**
