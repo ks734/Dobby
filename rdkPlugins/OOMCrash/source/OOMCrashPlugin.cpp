@@ -116,9 +116,7 @@ bool OOMCrash::postHalt()
         return false;
     }
 
-    bool oomDetected = false;
-    if (mUtils->exitStatus != 0)
-        oomDetected = checkForOOM();
+    bool oomDetected = checkForOOM();
 
     if (oomDetected)
         createFileForOOM();
