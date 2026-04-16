@@ -3195,8 +3195,25 @@ void DobbyManager::onChildExit()
                                 "(PID 1 namespace init convention)",
                                 id.c_str(), exitCode, sig, strsignal(sig));
 
-                    // Synthesise WIFSIGNALED status: signal number in bits 0-6
+                    // Synthesise WIFSIGNALED status: signal number in bits 0-6.
+                    // Also set bit 7 (WCOREDUMP) for signals that conventionally
+                    // produce a core dump (SIGABRT, SIGSEGV, SIGFPE, SIGILL,
+                    // SIGBUS, SIGQUIT) so that WCOREDUMP(status) returns true.
+                    // Note: no actual core file is written since DobbyInit used
+                    // _exit(); this is a best-effort convention match only.
+                    auto signalDumpsCore = [](int s) -> bool {
+                        switch (s) {
+                            case SIGABRT: case SIGSEGV: case SIGFPE:
+                            case SIGILL:  case SIGBUS:  case SIGQUIT:
+                                return true;
+                            default:
+                                return false;
+                        }
+                    };
+
                     status = sig & 0x7f;
+                    if (signalDumpsCore(sig))
+                        status |= 0x80;
                 }
             }
 
