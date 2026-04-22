@@ -74,11 +74,12 @@ bool OOMCrash::postInstallation()
         return false;
     }
 
-    const std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    const char *pathPtr = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    const std::string path = pathPtr ? pathPtr : "";
     if (path.empty())
     {
-        AI_LOG_ERROR("OOMCrash path is empty");
-        return false;
+        AI_LOG_INFO("OOMCrash path not configured, skipping mount setup for container '%s'", mUtils->getContainerId().c_str());
+        return true;
     }
 
     if (!mUtils->mkdirRecursive((mRootfsPath + path).c_str(), 0755) && errno != EEXIST)
@@ -118,19 +119,15 @@ bool OOMCrash::postHalt()
 
     bool oomDetected = checkForOOM();
 
-    if (oomDetected)
+    const char *pathPtr = mContainerConfig->rdk_plugins->oomcrash->data->path;
+    const std::string path = pathPtr ? pathPtr : "";
+
+    if (oomDetected && !path.empty())
         createFileForOOM();
 
     // Remove the crashFile if container exits normally or if no OOM detected
-    if (mUtils->exitStatus == 0 || !oomDetected)
+    if (!path.empty() && (mUtils->exitStatus == 0 || !oomDetected))
     {
-        std::string path = mContainerConfig->rdk_plugins->oomcrash->data->path;
-        if (path.empty())
-        {
-            AI_LOG_ERROR("OOMCrash path is empty");
-            return false;
-        }
-
         std::string crashFile = path + "/oom_crashed_" + mUtils->getContainerId() + ".txt";
         if (remove(crashFile.c_str()) != 0)
         {
