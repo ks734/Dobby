@@ -201,9 +201,7 @@ bool OOMCrash::readCgroup(unsigned long *val)
     FILE *fp = fopen(path.c_str(), "r");
     if (!fp)
     {
-        if (errno != ENOENT)
-            AI_LOG_ERROR("failed to open '%s' (%d - %s)", path.c_str(), errno, strerror(errno));
-
+        AI_LOG_ERROR("failed to open '%s' (%d - %s)", path.c_str(), errno, strerror(errno));
         return false;
     }
 
@@ -252,21 +250,80 @@ bool OOMCrash::readCgroup(unsigned long *val)
 }
 
 /**
- * @brief Check for Out of Memory by reading cgroup file.
+ * @brief Check if memory (or memory+swap) max usage reached the configured
+ *        limit, indicating the container hit its memory ceiling.
+ *
+ *  This is used as a fallback OOM indicator on older kernels (< 4.13) where
+ *  the oom_kill counter does not exist and under_oom is transient.
+ *  memory.max_usage_in_bytes is the high-water mark and persists until the
+ *  cgroup is destroyed.
+ *
+ * @return true if max usage >= limit for memory or memory+swap.
+ */
+bool OOMCrash::isMemoryAtLimit()
+{
+    std::string basePath = "/sys/fs/cgroup/memory/" + mUtils->getContainerId();
+
+    const char *pairs[][2] = {
+        { "/memory.max_usage_in_bytes",      "/memory.limit_in_bytes" },
+        { "/memory.memsw.max_usage_in_bytes", "/memory.memsw.limit_in_bytes" },
+    };
+
+    for (const auto &pair : pairs)
+    {
+        unsigned long maxUsage = 0, limit = 0;
+        std::string maxPath  = basePath + pair[0];
+        std::string limPath  = basePath + pair[1];
+
+        FILE *fpMax = fopen(maxPath.c_str(), "r");
+        FILE *fpLim = fopen(limPath.c_str(), "r");
+
+        bool ok = (fpMax && fpLim &&
+                   fscanf(fpMax, "%lu", &maxUsage) == 1 &&
+                   fscanf(fpLim, "%lu", &limit) == 1);
+
+        if (fpMax) fclose(fpMax);
+        if (fpLim) fclose(fpLim);
+
+        if (ok && limit > 0 && maxUsage >= limit)
+        {
+            AI_LOG_INFO("%s=%lu reached %s=%lu", pair[0]+1, maxUsage, pair[1]+1, limit);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @brief Check for Out of Memory by reading cgroup files.
+ *
+ *  Detection priority:
+ *    1. oom_kill  > 0            (kernel >= 4.13, definitive)
+ *    2. under_oom > 0            (kernel <  4.13, transient flag)
+ *    3. max_usage_in_bytes >= limit  (all kernels, persistent high-water mark)
  *
  * @return true if OOM detected.
  */
 
 bool OOMCrash::checkForOOM()
 {
-    unsigned long oomKill;
-    if (!readCgroup(&oomKill))
-    {
-        AI_LOG_WARN("Failed to read oom_control for container '%s'", mUtils->getContainerId().c_str());
-        return false;
-    }
+    unsigned long oomKill = 0;
+    bool cgroupRead = readCgroup(&oomKill);
 
-    if (oomKill == 0)
+    // Priority 1 & 2: oom_kill or under_oom confirmed OOM
+    if (cgroupRead && oomKill > 0)
+    {
+        AI_LOG_INFO("oom_control reports OOM (value=%lu) for container '%s'",
+                    oomKill, mUtils->getContainerId().c_str());
+    }
+    // Priority 3: on kernel < 4.13 under_oom may have cleared — check max_usage
+    else if (isMemoryAtLimit())
+    {
+        AI_LOG_WARN("oom_control did not confirm OOM but max memory usage reached limit "
+                    "for container '%s'", mUtils->getContainerId().c_str());
+    }
+    else
     {
         AI_LOG_INFO("No OOM kill detected in container '%s'", mUtils->getContainerId().c_str());
         return false;
