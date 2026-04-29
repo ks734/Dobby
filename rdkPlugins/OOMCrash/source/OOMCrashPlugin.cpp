@@ -175,11 +175,21 @@ std::vector<std::string> OOMCrash::getDependencies() const
  * @brief Read the oom_kill counter from the cgroup memory.oom_control file.
  *
  *  The memory.oom_control file contains multiple key-value lines, e.g.:
+ *
+ *  Kernel >= 4.13:
  *    oom_kill_disable 0
  *    under_oom        0
  *    oom_kill         1
  *
- *  @param[out]  val   Set to the value of the 'oom_kill' field on success.
+ *  Kernel < 4.13:
+ *    oom_kill_disable 0
+ *    under_oom        0
+ *
+ *  On older kernels the 'oom_kill' counter does not exist, so we fall back
+ *  to the 'under_oom' flag which is 1 while the cgroup is in OOM state.
+ *
+ *  @param[out]  val   Set to the value of the 'oom_kill' field (or 'under_oom'
+ *                     on older kernels) on success.
  *
  * @return true on successfully reading and parsing the field.
  */
@@ -200,7 +210,9 @@ bool OOMCrash::readCgroup(unsigned long *val)
     char* line = nullptr;
     size_t len = 0;
     ssize_t rd;
-    bool found = false;
+    bool foundOomKill = false;
+    unsigned long underOom = 0;
+    bool foundUnderOom = false;
 
     while ((rd = getline(&line, &len, fp)) > 0)
     {
@@ -210,8 +222,13 @@ bool OOMCrash::readCgroup(unsigned long *val)
         if (sscanf(line, "oom_kill %lu", &v) == 1)
         {
             *val = v;
-            found = true;
+            foundOomKill = true;
             break;
+        }
+        if (sscanf(line, "under_oom %lu", &v) == 1)
+        {
+            underOom = v;
+            foundUnderOom = true;
         }
     }
 
@@ -219,10 +236,19 @@ bool OOMCrash::readCgroup(unsigned long *val)
         free(line);
     fclose(fp);
 
-    if (!found)
-        AI_LOG_ERROR("oom_kill field not found in '%s'", path.c_str());
+    // Prefer oom_kill (kernel >= 4.13); fall back to under_oom for older kernels
+    if (foundOomKill)
+        return true;
 
-    return found;
+    if (foundUnderOom)
+    {
+        AI_LOG_INFO("'oom_kill' field not present (kernel < 4.13), using 'under_oom' fallback");
+        *val = underOom;
+        return true;
+    }
+
+    AI_LOG_ERROR("neither 'oom_kill' nor 'under_oom' found in '%s'", path.c_str());
+    return false;
 }
 
 /**
