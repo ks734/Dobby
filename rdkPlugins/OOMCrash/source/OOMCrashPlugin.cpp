@@ -21,7 +21,8 @@
 
 #include <map>
 
-#define FIREBOLT_STATE "fireboltState"
+#define FIREBOLT_STATE          "fireboltState"
+#define FIREBOLT_STATE_PREV     "fireboltState_prev"
 /**
  * Need to do this at the start of every plugin to make sure the correct
  * C methods are visible to allow PluginLauncher to find the plugin
@@ -329,13 +330,35 @@ bool OOMCrash::checkForOOM()
         return false;
     }
 
-    // OOM kill confirmed - retrieve firebolt state from annotations
+    // OOM kill confirmed - retrieve firebolt state from annotations.
+    // AppService often transitions the app to "background" after the OOM kill
+    // but before postHalt runs.  Since the container exited abnormally, prefer
+    // the previous fireboltState value (which was the state at the time of the
+    // actual OOM kill) over the current value which may have been overwritten
+    // by a post-crash transition.
     std::map<std::string, std::string> annotations = mUtils->getAnnotations();
-    auto it = annotations.find(FIREBOLT_STATE);
-    if (it != annotations.end())
+    std::string fireboltState;
+
+    auto prevIt = annotations.find(FIREBOLT_STATE_PREV);
+    if (prevIt != annotations.end())
+    {
+        fireboltState = prevIt->second;
+        AI_LOG_INFO("Using previous fireboltState '%s' (current may have been "
+                    "set after OOM kill)", fireboltState.c_str());
+    }
+    else
+    {
+        auto it = annotations.find(FIREBOLT_STATE);
+        if (it != annotations.end())
+        {
+            fireboltState = it->second;
+        }
+    }
+
+    if (!fireboltState.empty())
     {
         AI_LOG_WARN("OOM kill detected: container '%s' fireboltState '%s'",
-                    mUtils->getContainerId().c_str(), it->second.c_str());
+                    mUtils->getContainerId().c_str(), fireboltState.c_str());
     }
     else
     {
